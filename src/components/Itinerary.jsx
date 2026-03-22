@@ -1,4 +1,5 @@
 import AdBanner from './AdBanner';
+import AffiliateSection from './AffiliateSection';
 
 function BudgetBar({ label, amount, total, color }) {
   const pct = total > 0 ? Math.min((amount / total) * 100, 100) : 0;
@@ -182,6 +183,13 @@ export default function Itinerary({ plan, onBack, onNewTrip }) {
                 </div>
               </div>
             ))}
+
+            {/* AFFILIATE MARKETING */}
+            <AffiliateSection
+              destination={plan.destination}
+              persons={plan.persons}
+              days={plan.days.length}
+            />
 
             {/* AD BETWEEN DAYS AND TIPS */}
             <div style={{ margin: '24px 0' }}>
