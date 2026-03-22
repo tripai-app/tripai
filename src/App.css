@@ -1,0 +1,2 @@
+/* Reset default vite styles */
+#root { min-height: 100vh; text-align: left; width: 100%; max-width: 100%; border: none; }
