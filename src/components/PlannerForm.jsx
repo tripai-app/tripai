@@ -19,7 +19,7 @@ const hotelOptions = [
   { id: 'luxus', label: '👑 5-Sterne Luxus', desc: 'ab 250€/Nacht' },
 ];
 
-export default function PlannerForm({ defaultDestination, onGenerate }) {
+export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error }) {
   const [form, setForm] = useState({
     destination: defaultDestination || '',
     days: '5',
@@ -29,6 +29,7 @@ export default function PlannerForm({ defaultDestination, onGenerate }) {
     interests: ['kultur', 'essen'],
   });
   const [loading, setLoading] = useState(false);
+  const actualLoading = isLoading || loading;
 
   const toggleInterest = (id) => {
     setForm(f => ({
@@ -42,18 +43,14 @@ export default function PlannerForm({ defaultDestination, onGenerate }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.destination.trim()) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onGenerate({
-        destination: form.destination.trim(),
-        days: parseInt(form.days),
-        persons: parseInt(form.persons),
-        budget: parseInt(form.budget),
-        hotelCategory: form.hotelCategory,
-        interests: form.interests,
-      });
-    }, 1800);
+    onGenerate({
+      destination: form.destination.trim(),
+      days: parseInt(form.days),
+      persons: parseInt(form.persons),
+      budget: parseInt(form.budget),
+      hotelCategory: form.hotelCategory,
+      interests: form.interests,
+    });
   };
 
   const inputStyle = {
@@ -238,21 +235,28 @@ export default function PlannerForm({ defaultDestination, onGenerate }) {
               </div>
             </div>
 
+            {/* Error */}
+            {error && (
+              <div style={{ background: '#fff1f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', color: '#991b1b', fontSize: 14 }}>
+                ⚠️ {error}
+              </div>
+            )}
+
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || !form.destination.trim()}
+              disabled={actualLoading || !form.destination.trim()}
               style={{
-                background: loading ? '#93c5fd' : 'linear-gradient(135deg, #2563eb, #0ea5e9)',
+                background: actualLoading ? '#93c5fd' : 'linear-gradient(135deg, #2563eb, #0ea5e9)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 12,
                 padding: '16px 32px',
                 fontSize: 17,
                 fontWeight: 800,
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: actualLoading ? 'not-allowed' : 'pointer',
                 width: '100%',
-                boxShadow: loading ? 'none' : '0 8px 25px rgba(37,99,235,0.35)',
+                boxShadow: actualLoading ? 'none' : '0 8px 25px rgba(37,99,235,0.35)',
                 transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
@@ -260,15 +264,21 @@ export default function PlannerForm({ defaultDestination, onGenerate }) {
                 gap: 10,
               }}
             >
-              {loading ? (
+              {actualLoading ? (
                 <>
                   <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
-                  KI erstellt deinen Reiseplan...
+                  KI analysiert {form.destination || 'dein Ziel'}...
                 </>
               ) : (
-                <>✨ Reiseplan generieren</>
+                <>✨ KI-Reiseplan generieren</>
               )}
             </button>
+
+            {actualLoading && (
+              <div style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginTop: 8 }}>
+                🤖 Die KI recherchiert echte Hotels, Restaurants & Öffnungszeiten...
+              </div>
+            )}
           </div>
         </form>
 

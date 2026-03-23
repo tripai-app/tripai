@@ -3,69 +3,70 @@ import './App.css';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PlannerForm from './components/PlannerForm';
-import Itinerary from './components/Itinerary';
-import { generateItinerary } from './data/itineraryData';
+import AIItinerary from './components/AIItinerary';
 
 export default function App() {
   const [page, setPage] = useState('home');
   const [defaultDestination, setDefaultDestination] = useState('');
   const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleStartPlanning = () => {
-    setDefaultDestination('');
-    setPage('planner');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const navigate = (p) => { setPage(p); window.scrollTo({ top: 0 }); };
 
-  const handlePlanDestination = (dest) => {
-    setDefaultDestination(dest);
-    setPage('planner');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handleStartPlanning = () => { setDefaultDestination(''); navigate('planner'); };
+  const handlePlanDestination = (dest) => { setDefaultDestination(dest); navigate('planner'); };
+  const handleBack = () => navigate('planner');
+  const handleNewTrip = () => { setDefaultDestination(''); setPlan(null); navigate('planner'); };
 
-  const handleGenerate = (formData) => {
-    const generatedPlan = generateItinerary(formData);
-    setPlan({ ...generatedPlan, budget: formData.budget, persons: formData.persons });
-    setPage('itinerary');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handleGenerate = async (formData) => {
+    setLoading(true);
+    setError(null);
+    navigate('loading');
+    window.scrollTo({ top: 0 });
 
-  const handleBack = () => {
-    setPage('planner');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    try {
+      const response = await fetch('/api/generate-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-  const handleNewTrip = () => {
-    setDefaultDestination('');
-    setPlan(null);
-    setPage('planner');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Fehler beim Generieren');
+      }
+
+      setPlan({ ...data.plan, budget: formData.budget, persons: formData.persons });
+      navigate('itinerary');
+    } catch (err) {
+      setError(err.message);
+      navigate('planner');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
-      <Navbar page={page} onNavigate={(p) => { setPage(p); window.scrollTo({ top: 0 }); }} />
+      <Navbar page={page} onNavigate={navigate} />
 
       {page === 'home' && (
-        <Hero
-          onStartPlanning={handleStartPlanning}
-          onPlanDestination={handlePlanDestination}
-        />
+        <Hero onStartPlanning={handleStartPlanning} onPlanDestination={handlePlanDestination} />
       )}
 
-      {page === 'planner' && (
+      {(page === 'planner' || page === 'loading') && (
         <PlannerForm
           defaultDestination={defaultDestination}
           onGenerate={handleGenerate}
+          isLoading={loading}
+          error={error}
         />
       )}
 
       {page === 'itinerary' && plan && (
-        <Itinerary
-          plan={plan}
-          onBack={handleBack}
-          onNewTrip={handleNewTrip}
-        />
+        <AIItinerary plan={plan} onBack={handleBack} onNewTrip={handleNewTrip} />
       )}
     </div>
   );
