@@ -42,7 +42,10 @@ REISEDATEN:
 - Unterkunft: ${hotelLabel}
 - Interessen: ${interestsList || 'Allgemein'}
 
-Erstelle einen extrem detaillierten, echten Reiseplan. Verwende ECHTE Hotelnamen, ECHTE Restaurantnamen, ECHTE Öffnungszeiten und ECHTE Sehenswürdigkeiten.
+Erstelle einen EXTREM detaillierten, echten Reiseplan wie ein lokaler Experte.
+PFLICHT: Verwende nur ECHTE Namen — keine erfundenen! Echte Hotels die wirklich existieren, echte Restaurants mit echten Gerichten, echte Öffnungszeiten, echte Eintrittspreise.
+Für die Aktivitäten gilt: Gib IMMER die exakte Adresse oder das Stadtviertel an, die Öffnungszeiten (Mo-So), Eintrittspreise, wie lange man idealerweise bleibt, ob man Tickets vorbuchen sollte, welcher Guide-Anbieter empfehlenswert ist, und welches der beste Fotospot im/am Gebäude ist.
+Für Restaurants: echte Gerichte die man probieren muss, Preisklasse (€/€€/€€€), ob Reservierung nötig ist, und was das Lokal besonders macht.
 
 Gib folgendes JSON zurück:
 {
