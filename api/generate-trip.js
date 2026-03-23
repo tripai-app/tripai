@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   };
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
 
-  const prompt = `Du bist ein erfahrener Reiseexperte und planst eine echte, detaillierte Reise. Antworte NUR mit einem validen JSON-Objekt, ohne Markdown-Blöcke, ohne Erklärungen.
+  const prompt = `Du bist ein Weltreise-Experte mit Kenntnissen über JEDEN Ort der Erde. Antworte NUR mit einem validen JSON-Objekt, ohne Markdown-Blöcke, ohne Erklärungen.
 
 REISEDATEN:
 - Ziel: ${destination}
@@ -42,10 +42,14 @@ REISEDATEN:
 - Unterkunft: ${hotelLabel}
 - Interessen: ${interestsList || 'Allgemein'}
 
-Erstelle einen EXTREM detaillierten, echten Reiseplan wie ein lokaler Experte.
-PFLICHT: Verwende nur ECHTE Namen — keine erfundenen! Echte Hotels die wirklich existieren, echte Restaurants mit echten Gerichten, echte Öffnungszeiten, echte Eintrittspreise.
-Für die Aktivitäten gilt: Gib IMMER die exakte Adresse oder das Stadtviertel an, die Öffnungszeiten (Mo-So), Eintrittspreise, wie lange man idealerweise bleibt, ob man Tickets vorbuchen sollte, welcher Guide-Anbieter empfehlenswert ist, und welches der beste Fotospot im/am Gebäude ist.
-Für Restaurants: echte Gerichte die man probieren muss, Preisklasse (€/€€/€€€), ob Reservierung nötig ist, und was das Lokal besonders macht.
+WICHTIGE REGELN:
+1. JEDER Ort weltweit funktioniert — ob Weltstadt, kleines Dorf, Insel, Wüste oder Bergregion.
+2. Verwende echte, bekannte Namen für Sehenswürdigkeiten, Restaurants und Hotels des jeweiligen Ortes.
+3. Falls es sich um einen kleinen/unbekannten Ort handelt: Beschreibe die Region authentisch, nenne typische lokale Gerichte, landschaftliche Highlights und nahe gelegene Attraktionen.
+4. Bei Flügen: Nenne realistische Flugverbindungen (ggf. über nächstgelegenen Flughafen). Für sehr abgelegene Orte: Zeige die beste Anreiseroute (Flug + Bus/Bahn/Auto).
+5. Öffnungszeiten, Preise und Details so genau wie möglich — bei Unsicherheit realistische Schätzungen.
+6. Restaurants: Typische Landesküche, echte Gerichte, Preisklasse, Besonderheit.
+7. Jeder Tag soll 4-6 abwechslungsreiche Zeitslots haben — kein Tag soll sich wiederholen.
 
 Gib folgendes JSON zurück:
 {
@@ -141,7 +145,8 @@ WICHTIG:
 - ECHTE Namen verwenden, keine Platzhalter
 - Öffnungszeiten so genau wie möglich
 - tiktokWorthy: true bei besonders fotogenen Orten
-- hiddenGem pro Tag: ein echter Geheimtipp der nicht in jedem Reiseführer steht`;
+- hiddenGem pro Tag: ein lokaler Geheimtipp, der nicht in jedem Reiseführer steht
+- Antworte AUSSCHLIESSLICH mit dem JSON-Objekt — kein Text davor oder danach`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
