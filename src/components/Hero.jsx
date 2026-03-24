@@ -1,18 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 
-/* ── Scroll-fade-in hook ───────────────────────────── */
+/* ── Scroll-slide-in hook (kein opacity=0 → kein weißer Screen) ── */
 function useFadeIn(threshold = 0.12) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Sofort sichtbar wenn schon im Viewport
+    if (el.getBoundingClientRect().top < window.innerHeight * 1.1) {
+      setVisible(true);
+      return;
+    }
+    // Fallback: spätestens nach 1.5s sichtbar
+    const fallback = setTimeout(() => setVisible(true), 1500);
     const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); clearTimeout(fallback); } },
       { threshold }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); clearTimeout(fallback); };
   }, []);
   return [ref, visible];
 }
