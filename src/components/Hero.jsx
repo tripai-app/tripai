@@ -169,6 +169,7 @@ function Marquee() {
 function ExampleTrip({ onStart }) {
   const [ref, visible] = useFadeIn();
   const [cardHovered, setCardHovered] = useState(false);
+  const isMobile = useIsMobile();
   const slots = [
     { time: '09:00', icon: '🏛️', name: 'Kolosseum', detail: '09:00–19:00 · ca. 2–3 Std.', cost: '18€' },
     { time: '12:30', icon: '🍽️', name: 'Da Enzo al 29', detail: 'Trastevere · Cacio e Pepe', cost: '22€' },
@@ -178,7 +179,7 @@ function ExampleTrip({ onStart }) {
 
   return (
     <section ref={ref} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#f8fafc', opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(28px)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.15fr', gap: 72, alignItems: 'center' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.15fr', gap: isMobile ? 40 : 72, alignItems: 'center' }}>
 
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: 14 }}>Echte Ergebnisse</div>
@@ -259,11 +260,23 @@ const destinations = [
   { name: 'Thailand', emoji: '🇹🇭', tag: 'Exotik & Meer', img: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&h=500&fit=crop&q=85' },
 ];
 
+/* ── Responsive breakpoint ─────────────────────────── */
+function useIsMobile() {
+  const [mobile, setMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return mobile;
+}
+
 /* ── Hero ──────────────────────────────────────────── */
 export default function Hero({ onStartPlanning, onPlanDestination }) {
   const [featRef, featVisible] = useFadeIn();
   const [destRef, destVisible] = useFadeIn();
   const [howRef, howVisible] = useFadeIn();
+  const isMobile = useIsMobile();
 
   return (
     <div style={{ background: '#fff' }}>
@@ -307,7 +320,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
             </div>
           </div>
 
-          <AnimatedMockup />
+          {!isMobile && <AnimatedMockup />}
         </div>
       </section>
 
@@ -316,7 +329,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
 
       {/* ── FEATURES — no boxes ─────────────────── */}
       <section ref={featRef} style={{ padding: 'clamp(60px, 8vw, 100px) 24px', background: '#fff', opacity: featVisible ? 1 : 0, transform: featVisible ? 'none' : 'translateY(28px)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 80, alignItems: 'center' }}>
 
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: 16 }}>Warum TripAI?</div>
@@ -374,10 +387,10 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
               <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>Klick auf ein Ziel — oder gib deinen eigenen Ort ein.</p>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
             {destinations.slice(0, 2).map((d, i) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} big visible={destVisible} delay={i * 100} />)}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 14 }}>
             {destinations.slice(2).map((d, i) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} visible={destVisible} delay={(i + 2) * 100} />)}
           </div>
         </div>
@@ -389,8 +402,8 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
           <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 40px)', fontWeight: 900, color: '#fff', letterSpacing: '-1px', marginBottom: 56 }}>
             In 3 Schritten zum perfekten Plan.
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0, position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 25, left: '18%', right: '18%', height: 1, background: 'rgba(255,255,255,0.07)' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 40 : 0, position: 'relative' }}>
+            {!isMobile && <div style={{ position: 'absolute', top: 25, left: '18%', right: '18%', height: 1, background: 'rgba(255,255,255,0.07)' }} />}
             {[
               { emoji: '✍️', num: '01', title: 'Eingabe', desc: 'Ziel, Budget & Dauer' },
               { emoji: '🤖', num: '02', title: 'TripAI plant', desc: 'Kompletter Plan in Sekunden' },
