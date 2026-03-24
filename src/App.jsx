@@ -4,10 +4,12 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PlannerForm from './components/PlannerForm';
 import AIItinerary from './components/AIItinerary';
+import LoadingScreen from './components/LoadingScreen';
 
 export default function App() {
   const [page, setPage] = useState('home');
   const [defaultDestination, setDefaultDestination] = useState('');
+  const [plannedDestination, setPlannedDestination] = useState('');
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,6 +24,7 @@ export default function App() {
   const handleGenerate = async (formData) => {
     setLoading(true);
     setError(null);
+    setPlannedDestination(formData.destination);
     navigate('loading');
     window.scrollTo({ top: 0 });
 
@@ -56,13 +59,17 @@ export default function App() {
         <Hero onStartPlanning={handleStartPlanning} onPlanDestination={handlePlanDestination} />
       )}
 
-      {(page === 'planner' || page === 'loading') && (
+      {page === 'planner' && (
         <PlannerForm
           defaultDestination={defaultDestination}
           onGenerate={handleGenerate}
           isLoading={loading}
           error={error}
         />
+      )}
+
+      {page === 'loading' && (
+        <LoadingScreen destination={plannedDestination} />
       )}
 
       {page === 'itinerary' && plan && (

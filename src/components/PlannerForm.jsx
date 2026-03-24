@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const interests = [
   { id: 'kultur', label: '🏛️ Kultur' },
@@ -27,6 +27,10 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     hotelCategory: 'mittel',
     interests: ['kultur', 'essen'],
   });
+
+  useEffect(() => {
+    if (defaultDestination) setForm(f => ({ ...f, destination: defaultDestination }));
+  }, [defaultDestination]);
 
   const toggle = (id) => setForm(f => ({
     ...f,
