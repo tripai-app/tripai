@@ -1,4 +1,15 @@
+import { useState, useEffect } from 'react';
 import AffiliateSection from './AffiliateSection';
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return mobile;
+}
 
 const TYPE_ICONS = {
   sehenswuerdigkeit: '🏛️',
@@ -88,6 +99,7 @@ function DayCard({ day }) {
 }
 
 export default function AIItinerary({ plan, onBack, onNewTrip }) {
+  const isMobile = useIsMobile();
   if (!plan) return null;
 
   const overBudget = plan.costs?.gesamt > plan.budget;
@@ -132,7 +144,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip }) {
       </div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 300px', gap: 24, alignItems: 'start' }}>
 
           {/* LEFT COLUMN */}
           <div>
@@ -255,7 +267,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip }) {
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div style={{ position: 'sticky', top: 80 }}>
+          <div style={{ position: isMobile ? 'static' : 'sticky', top: 80, order: isMobile ? -1 : 0 }}>
             <div style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 2px 16px rgba(0,0,0,0.06)', marginBottom: 14 }}>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', marginBottom: 18 }}>💰 Budget-Übersicht</h3>
 
