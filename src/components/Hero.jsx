@@ -1,28 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
-/* ── Scroll-slide-in hook (kein opacity=0 → kein weißer Screen) ── */
-function useFadeIn(threshold = 0.12) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Sofort sichtbar wenn schon im Viewport
-    if (el.getBoundingClientRect().top < window.innerHeight * 1.1) {
-      setVisible(true);
-      return;
-    }
-    // Fallback: spätestens nach 1.5s sichtbar
-    const fallback = setTimeout(() => setVisible(true), 1500);
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); clearTimeout(fallback); } },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => { obs.disconnect(); clearTimeout(fallback); };
-  }, []);
-  return [ref, visible];
-}
+/* ── useFadeIn: immer sichtbar, kein opacity/transform Problem ── */
+const useFadeIn = () => [useRef(null), true];
 
 /* ── Live counter ──────────────────────────────────── */
 function LiveCounter() {
@@ -116,15 +95,14 @@ function AnimatedMockup() {
 }
 
 /* ── Destination card ──────────────────────────────── */
-function DestCard({ dest, onPlan, big = false, visible = true, delay = 0 }) {
+function DestCard({ dest, onPlan, big = false }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button onClick={() => onPlan(dest.name)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{
       background: 'none', border: 'none', padding: 0, cursor: 'pointer',
       borderRadius: 18, overflow: 'hidden', display: 'block', width: '100%', textAlign: 'left',
       boxShadow: hovered ? '0 28px 60px rgba(0,0,0,0.22)' : '0 4px 20px rgba(0,0,0,0.07)',
-      transform: visible ? 'none' : 'translateY(22px)',
-      transition: `box-shadow 0.35s, transform 0.55s ${delay}ms ease`,
+      transition: 'box-shadow 0.35s',
     }}>
       <div style={{ position: 'relative', height: big ? 260 : 160, overflow: 'hidden' }}>
         <img src={dest.img} alt={dest.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.6s ease' }} />
@@ -166,7 +144,6 @@ function Marquee() {
 
 /* ── Example trip (floating, tilted) ──────────────── */
 function ExampleTrip({ onStart }) {
-  const [ref, visible] = useFadeIn();
   const [cardHovered, setCardHovered] = useState(false);
   const isMobile = useIsMobile();
   const slots = [
@@ -177,7 +154,7 @@ function ExampleTrip({ onStart }) {
   ];
 
   return (
-    <section ref={ref} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#f8fafc', transform: visible ? 'none' : 'translateY(28px)', transition: 'transform 0.7s ease' }}>
+    <section style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#f8fafc' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.15fr', gap: isMobile ? 40 : 72, alignItems: 'center' }}>
 
         <div>
@@ -272,9 +249,6 @@ function useIsMobile() {
 
 /* ── Hero ──────────────────────────────────────────── */
 export default function Hero({ onStartPlanning, onPlanDestination }) {
-  const [featRef, featVisible] = useFadeIn();
-  const [destRef, destVisible] = useFadeIn();
-  const [howRef, howVisible] = useFadeIn();
   const isMobile = useIsMobile();
 
   return (
@@ -327,7 +301,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
       <Marquee />
 
       {/* ── FEATURES — no boxes ─────────────────── */}
-      <section ref={featRef} style={{ padding: 'clamp(60px, 8vw, 100px) 24px', background: '#fff', transform: featVisible ? 'none' : 'translateY(28px)', transition: 'transform 0.7s ease' }}>
+      <section style={{ padding: 'clamp(60px, 8vw, 100px) 24px', background: '#fff' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 80, alignItems: 'center' }}>
 
           <div>
@@ -359,8 +333,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
                 paddingBottom: i < 3 ? 24 : 0,
                 marginBottom: i < 3 ? 24 : 0,
                 borderBottom: i < 3 ? '1px solid #f1f5f9' : 'none',
-                paddingLeft: featVisible ? [0, 12, 6, 18][i] : 0,
-                transition: `padding-left 0.6s ${i * 80}ms ease`,
+                paddingLeft: [0, 12, 6, 18][i],
               }}>
                 <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0, marginTop: 2 }}>{f.emoji}</span>
                 <div>
@@ -377,7 +350,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
       <ExampleTrip onStart={onStartPlanning} />
 
       {/* ── DESTINATIONS ─────────────────────────── */}
-      <section ref={destRef} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#fff' }}>
+      <section style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#fff' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ marginBottom: 40 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', letterSpacing: '2.5px', textTransform: 'uppercase', marginBottom: 14 }}>Reiseziele</div>
@@ -387,16 +360,16 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
-            {destinations.slice(0, 2).map((d, i) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} big visible={destVisible} delay={i * 100} />)}
+            {destinations.slice(0, 2).map((d) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} big />)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 14 }}>
-            {destinations.slice(2).map((d, i) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} visible={destVisible} delay={(i + 2) * 100} />)}
+            {destinations.slice(2).map((d) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} />)}
           </div>
         </div>
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────── */}
-      <section ref={howRef} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#0f172a' }}>
+      <section style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#0f172a' }}>
         <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 40px)', fontWeight: 900, color: '#fff', letterSpacing: '-1px', marginBottom: 56 }}>
             In 3 Schritten zum perfekten Plan.
@@ -408,7 +381,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
               { emoji: '🤖', num: '02', title: 'TripAI plant', desc: 'Kompletter Plan in Sekunden' },
               { emoji: '✈️', num: '03', title: 'Losreisen', desc: 'Buchen & genießen' },
             ].map((s, i) => (
-              <div key={s.num} style={{ textAlign: 'center', padding: '0 20px', transform: howVisible ? 'none' : 'translateY(16px)', transition: `transform 0.6s ${i * 150}ms ease` }}>
+              <div key={s.num} style={{ textAlign: 'center', padding: '0 20px' }}>
                 <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#1e3a8a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, margin: '0 auto 20px', position: 'relative', zIndex: 1 }}>{s.emoji}</div>
                 <div style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 8 }}>{s.num}</div>
                 <div style={{ color: '#fff', fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{s.title}</div>
