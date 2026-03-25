@@ -123,9 +123,8 @@ function DestCard({ dest, onPlan, big = false, visible = true, delay = 0 }) {
       background: 'none', border: 'none', padding: 0, cursor: 'pointer',
       borderRadius: 18, overflow: 'hidden', display: 'block', width: '100%', textAlign: 'left',
       boxShadow: hovered ? '0 28px 60px rgba(0,0,0,0.22)' : '0 4px 20px rgba(0,0,0,0.07)',
-      opacity: visible ? 1 : 0,
       transform: visible ? 'none' : 'translateY(22px)',
-      transition: `box-shadow 0.35s, opacity 0.55s ${delay}ms ease, transform 0.55s ${delay}ms ease`,
+      transition: `box-shadow 0.35s, transform 0.55s ${delay}ms ease`,
     }}>
       <div style={{ position: 'relative', height: big ? 260 : 160, overflow: 'hidden' }}>
         <img src={dest.img} alt={dest.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.6s ease' }} />
@@ -178,7 +177,7 @@ function ExampleTrip({ onStart }) {
   ];
 
   return (
-    <section ref={ref} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#f8fafc', opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(28px)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}>
+    <section ref={ref} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#f8fafc', transform: visible ? 'none' : 'translateY(28px)', transition: 'transform 0.7s ease' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.15fr', gap: isMobile ? 40 : 72, alignItems: 'center' }}>
 
         <div>
@@ -328,7 +327,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
       <Marquee />
 
       {/* ── FEATURES — no boxes ─────────────────── */}
-      <section ref={featRef} style={{ padding: 'clamp(60px, 8vw, 100px) 24px', background: '#fff', opacity: featVisible ? 1 : 0, transform: featVisible ? 'none' : 'translateY(28px)', transition: 'opacity 0.7s ease, transform 0.7s ease' }}>
+      <section ref={featRef} style={{ padding: 'clamp(60px, 8vw, 100px) 24px', background: '#fff', transform: featVisible ? 'none' : 'translateY(28px)', transition: 'transform 0.7s ease' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 80, alignItems: 'center' }}>
 
           <div>
@@ -397,7 +396,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────── */}
-      <section ref={howRef} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#0f172a', opacity: howVisible ? 1 : 0, transition: 'opacity 0.8s ease' }}>
+      <section ref={howRef} style={{ padding: 'clamp(60px, 8vw, 96px) 24px', background: '#0f172a' }}>
         <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 40px)', fontWeight: 900, color: '#fff', letterSpacing: '-1px', marginBottom: 56 }}>
             In 3 Schritten zum perfekten Plan.
@@ -409,7 +408,7 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
               { emoji: '🤖', num: '02', title: 'TripAI plant', desc: 'Kompletter Plan in Sekunden' },
               { emoji: '✈️', num: '03', title: 'Losreisen', desc: 'Buchen & genießen' },
             ].map((s, i) => (
-              <div key={s.num} style={{ textAlign: 'center', padding: '0 20px', opacity: howVisible ? 1 : 0, transform: howVisible ? 'none' : 'translateY(16px)', transition: `opacity 0.6s ${i * 150}ms ease, transform 0.6s ${i * 150}ms ease` }}>
+              <div key={s.num} style={{ textAlign: 'center', padding: '0 20px', transform: howVisible ? 'none' : 'translateY(16px)', transition: `transform 0.6s ${i * 150}ms ease` }}>
                 <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#1e3a8a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, margin: '0 auto 20px', position: 'relative', zIndex: 1 }}>{s.emoji}</div>
                 <div style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 8 }}>{s.num}</div>
                 <div style={{ color: '#fff', fontSize: 16, fontWeight: 800, marginBottom: 6 }}>{s.title}</div>
