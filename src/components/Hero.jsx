@@ -1,7 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-
-/* ── useFadeIn: immer sichtbar, kein opacity/transform Problem ── */
-const useFadeIn = () => [useRef(null), true];
+import { useState, useEffect } from 'react';
 
 /* ── Live counter ──────────────────────────────────── */
 function LiveCounter() {

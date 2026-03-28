@@ -1,10 +1,32 @@
-import { useState } from 'react';
+import { useState, Component } from 'react';
 import './App.css';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PlannerForm from './components/PlannerForm';
 import AIItinerary from './components/AIItinerary';
 import LoadingScreen from './components/LoadingScreen';
+
+/* ── ErrorBoundary: fängt alle React Crashes auf ── */
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { crashed: false }; }
+  static getDerivedStateFromError() { return { crashed: true }; }
+  render() {
+    if (this.state.crashed) {
+      return (
+        <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24 }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>✈️</div>
+          <h2 style={{ color: '#fff', fontWeight: 900, fontSize: 26, marginBottom: 10 }}>Kurzer Fehler</h2>
+          <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 28 }}>Einfach die Seite neu laden!</p>
+          <button onClick={() => { this.setState({ crashed: false }); window.location.reload(); }}
+            style={{ background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', border: 'none', borderRadius: 50, padding: '14px 32px', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
+            🔄 Neu laden
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [page, setPage] = useState('home');
@@ -52,29 +74,31 @@ export default function App() {
   };
 
   return (
-    <div>
-      <Navbar page={page} onNavigate={navigate} />
+    <ErrorBoundary>
+      <div>
+        <Navbar page={page} onNavigate={navigate} />
 
-      {page === 'home' && (
-        <Hero onStartPlanning={handleStartPlanning} onPlanDestination={handlePlanDestination} />
-      )}
+        {page === 'home' && (
+          <Hero onStartPlanning={handleStartPlanning} onPlanDestination={handlePlanDestination} />
+        )}
 
-      {page === 'planner' && (
-        <PlannerForm
-          defaultDestination={defaultDestination}
-          onGenerate={handleGenerate}
-          isLoading={loading}
-          error={error}
-        />
-      )}
+        {page === 'planner' && (
+          <PlannerForm
+            defaultDestination={defaultDestination}
+            onGenerate={handleGenerate}
+            isLoading={loading}
+            error={error}
+          />
+        )}
 
-      {page === 'loading' && (
-        <LoadingScreen destination={plannedDestination} />
-      )}
+        {page === 'loading' && (
+          <LoadingScreen destination={plannedDestination} />
+        )}
 
-      {page === 'itinerary' && plan && (
-        <AIItinerary plan={plan} onBack={handleBack} onNewTrip={handleNewTrip} />
-      )}
-    </div>
+        {page === 'itinerary' && plan && (
+          <AIItinerary plan={plan} onBack={handleBack} onNewTrip={handleNewTrip} />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
