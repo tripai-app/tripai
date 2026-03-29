@@ -100,10 +100,45 @@ function DayCard({ day }) {
 
 export default function AIItinerary({ plan, onBack, onNewTrip }) {
   const isMobile = useIsMobile();
+  const [toast, setToast] = useState('');
+  const [isFav, setIsFav] = useState(() => {
+    try {
+      const favs = JSON.parse(localStorage.getItem('tripai_favorites') || '[]');
+      return favs.some(f => f.destination === plan?.destination);
+    } catch { return false; }
+  });
+
   if (!plan) return null;
 
   const overBudget = plan.costs?.gesamt > plan.budget;
   const diff = Math.abs(plan.budget - (plan.costs?.gesamt || 0));
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2500);
+  };
+
+  const handleShare = () => {
+    const text = `Ich habe meinen Reiseplan nach ${plan.destination} für ${plan.days?.length} Tage mit TripAI erstellt! ✈️ Kostenlos testen: https://tripai-omega.vercel.app`;
+    navigator.clipboard?.writeText(text).then(() => showToast('📋 In Zwischenablage kopiert!'));
+  };
+
+  const handleFavorite = () => {
+    try {
+      const favs = JSON.parse(localStorage.getItem('tripai_favorites') || '[]');
+      if (isFav) {
+        const updated = favs.filter(f => f.destination !== plan.destination);
+        localStorage.setItem('tripai_favorites', JSON.stringify(updated));
+        setIsFav(false);
+        showToast('💔 Aus Favoriten entfernt');
+      } else {
+        favs.unshift({ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE') });
+        localStorage.setItem('tripai_favorites', JSON.stringify(favs.slice(0, 20)));
+        setIsFav(true);
+        showToast('❤️ Zu Favoriten hinzugefügt!');
+      }
+    } catch { showToast('Fehler beim Speichern'); }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -128,17 +163,27 @@ export default function AIItinerary({ plan, onBack, onNewTrip }) {
                 </p>
               </div>
             </div>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: overBudget ? '#fff1f2' : '#f0fdf4',
-              border: `1px solid ${overBudget ? '#fecaca' : '#86efac'}`,
-              borderRadius: 50, padding: '8px 16px',
-            }}>
-              <span style={{ fontSize: 16 }}>{overBudget ? '⚠️' : '✅'}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: overBudget ? '#dc2626' : '#16a34a' }}>
-                {overBudget ? `${diff.toLocaleString('de-DE')}€ über Budget` : `${diff.toLocaleString('de-DE')}€ gespart`}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <button onClick={handleFavorite} style={{ background: isFav ? '#fff1f2' : '#f8fafc', border: `1px solid ${isFav ? '#fecaca' : '#e2e8f0'}`, borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: isFav ? '#dc2626' : '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+                {isFav ? '❤️' : '🤍'} {isFav ? 'Gespeichert' : 'Speichern'}
+              </button>
+              <button onClick={handleShare} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+                🔗 Teilen
+              </button>
+              <div style={{ background: overBudget ? '#fff1f2' : '#f0fdf4', border: `1px solid ${overBudget ? '#fecaca' : '#86efac'}`, borderRadius: 50, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 16 }}>{overBudget ? '⚠️' : '✅'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: overBudget ? '#dc2626' : '#16a34a' }}>
+                  {overBudget ? `${diff.toLocaleString('de-DE')}€ über Budget` : `${diff.toLocaleString('de-DE')}€ gespart`}
+                </span>
+              </div>
             </div>
+
+            {/* Toast */}
+            {toast && (
+              <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: 50, fontSize: 14, fontWeight: 700, zIndex: 9999, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', animation: 'slideIn 0.3s ease' }}>
+                {toast}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -311,6 +356,9 @@ export default function AIItinerary({ plan, onBack, onNewTrip }) {
 
         </div>
       </div>
+      <style>{`
+        @keyframes slideIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+      `}</style>
     </div>
   );
 }

@@ -26,6 +26,8 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     budget: 1500,
     hotelCategory: 'mittel',
     interests: ['kultur', 'essen'],
+    includeTiktok: true,
+    includeHiddenGems: true,
   });
 
   useEffect(() => {
@@ -216,6 +218,37 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                     boxShadow: sel ? '0 3px 10px rgba(37,99,235,0.25)' : 'none',
                   }}>
                     {i.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Extras */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>EXTRAS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { key: 'includeTiktok', emoji: '📱', label: 'TikTok & Instagram Spots', desc: 'Fotogene Orte mit bester Uhrzeit' },
+                { key: 'includeHiddenGems', emoji: '💎', label: 'Geheimtipps & Hidden Gems', desc: 'Orte abseits der Touristenpfade' },
+              ].map(({ key, emoji, label, desc }) => {
+                const active = form[key];
+                return (
+                  <button key={key} type="button" onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: active ? '#eff6ff' : '#f8fafc',
+                    border: `2px solid ${active ? '#2563eb' : '#e2e8f0'}`,
+                    borderRadius: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.15s',
+                  }}>
+                    <span style={{ fontSize: 22 }}>{emoji}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#1d4ed8' : '#374151' }}>{label}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{desc}</div>
+                    </div>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: active ? '#2563eb' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
+                      {active && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
+                    </div>
                   </button>
                 );
               })}

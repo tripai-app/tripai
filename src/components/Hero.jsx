@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 
 /* ── Live counter ──────────────────────────────────── */
 function LiveCounter() {
-  const [count, setCount] = useState(2841);
+  const [count, setCount] = useState(() => 2500 + Math.floor(Math.random() * 700));
   useEffect(() => {
-    const t = setInterval(() => {
-      setCount(c => c + Math.floor(Math.random() * 3 + 1));
-    }, 3500 + Math.random() * 2000);
-    return () => clearInterval(t);
+    const small = setInterval(() => {
+      setCount(c => c + Math.floor(Math.random() * 5 + 1));
+    }, 2500 + Math.random() * 2000);
+    const big = setInterval(() => {
+      setCount(c => c + Math.floor(Math.random() * 8 + 5));
+    }, 20000 + Math.random() * 10000);
+    return () => { clearInterval(small); clearInterval(big); };
   }, []);
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 50, padding: '5px 16px' }}>
@@ -20,67 +23,89 @@ function LiveCounter() {
 }
 
 /* ── Animated product mockup ───────────────────────── */
-const DEMO_TEXT = '7 Tage Bali · 2 Personen · 1.200€';
-const DEMO_CARDS = [
-  { emoji: '🏨', title: 'Alaya Resort Ubud', sub: 'ab 89€ · ⭐⭐⭐⭐' },
-  { emoji: '🏛️', title: 'Tegallalang Reisfelder', sub: '09:00 · Eintritt 2€' },
-  { emoji: '🍽️', title: 'Locavore Restaurant', sub: '13:00 · Balinesische Küche' },
-  { emoji: '💎', title: 'Pura Tirta Empul', sub: 'Geheimtipp · 20 min' },
+const DEMO_SETS = [
+  {
+    text: '7 Tage Bali · 2 Personen · 1.200€',
+    cards: [
+      { emoji: '🏨', title: 'Alaya Resort Ubud', sub: 'ab 89€ · ⭐⭐⭐⭐', bg: '#eff6ff', color: '#0f172a' },
+      { emoji: '🏛️', title: 'Tegallalang Reisfelder', sub: '09:00 · Eintritt 2€', bg: '#f8fafc', color: '#0f172a' },
+      { emoji: '🍽️', title: 'Locavore Restaurant', sub: '13:00 · Balinesische Küche', bg: '#f8fafc', color: '#0f172a' },
+      { emoji: '📱', title: 'Tanah Lot · Sonnenuntergang', sub: 'TikTok-Spot · 18:30 Uhr', bg: '#0f0f1a', color: '#fff' },
+      { emoji: '💎', title: 'Pura Tirta Empul', sub: 'Geheimtipp · 20 min', bg: '#fdf4ff', color: '#5b21b6' },
+    ],
+  },
+  {
+    text: '5 Tage Paris · 2 Personen · 1.800€',
+    cards: [
+      { emoji: '🏨', title: 'Hôtel Fabric Paris', sub: 'ab 130€ · ⭐⭐⭐⭐', bg: '#eff6ff', color: '#0f172a' },
+      { emoji: '🏛️', title: 'Eiffelturm', sub: '10:00 · 2–3 Std.', bg: '#f8fafc', color: '#0f172a' },
+      { emoji: '🍽️', title: 'Café de Flore', sub: '13:00 · Französische Küche', bg: '#f8fafc', color: '#0f172a' },
+      { emoji: '📱', title: 'Pont des Arts', sub: 'TikTok-Spot · Goldene Stunde', bg: '#0f0f1a', color: '#fff' },
+      { emoji: '💎', title: 'Promenade Plantée', sub: 'Geheimtipp · Hochpark', bg: '#fdf4ff', color: '#5b21b6' },
+    ],
+  },
 ];
 
 function AnimatedMockup() {
+  const [setIdx, setSetIdx] = useState(0);
   const [phase, setPhase] = useState(0);
   const [typed, setTyped] = useState('');
   const [shown, setShown] = useState(0);
+  const demo = DEMO_SETS[setIdx];
 
   useEffect(() => {
     let t;
     if (phase === 0) {
-      if (typed.length < DEMO_TEXT.length) {
-        t = setTimeout(() => setTyped(DEMO_TEXT.slice(0, typed.length + 1)), 55);
-      } else { t = setTimeout(() => setPhase(1), 700); }
+      if (typed.length < demo.text.length) {
+        t = setTimeout(() => setTyped(demo.text.slice(0, typed.length + 1)), 50);
+      } else { t = setTimeout(() => setPhase(1), 600); }
     } else if (phase === 1) {
-      t = setTimeout(() => { setPhase(2); setShown(0); }, 1800);
+      t = setTimeout(() => { setPhase(2); setShown(0); }, 1600);
     } else if (phase === 2) {
-      if (shown < DEMO_CARDS.length) {
-        t = setTimeout(() => setShown(s => s + 1), 300);
-      } else { t = setTimeout(() => { setPhase(0); setTyped(''); setShown(0); }, 4500); }
+      if (shown < demo.cards.length) {
+        t = setTimeout(() => setShown(s => s + 1), 280);
+      } else {
+        t = setTimeout(() => {
+          setPhase(0); setTyped(''); setShown(0);
+          setSetIdx(i => (i + 1) % DEMO_SETS.length);
+        }, 3800);
+      }
     }
     return () => clearTimeout(t);
-  }, [phase, typed, shown]);
+  }, [phase, typed, shown, demo]);
 
   return (
-    <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.32)', width: 300, overflow: 'hidden', flexShrink: 0, animation: 'floatMockup 6s ease-in-out infinite' }}>
+    <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.32)', width: 310, overflow: 'hidden', flexShrink: 0, animation: 'floatMockup 6s ease-in-out infinite' }}>
       <div style={{ background: '#f1f5f9', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ef4444' }} />
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#fbbf24' }} />
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#22c55e' }} />
         <div style={{ flex: 1, background: '#e2e8f0', borderRadius: 6, padding: '3px 10px', marginLeft: 6, fontSize: 10, color: '#94a3b8' }}>tripai-omega.vercel.app</div>
       </div>
-      <div style={{ padding: '16px 16px 20px' }}>
-        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, border: `1.5px solid ${phase === 0 ? '#2563eb' : '#e2e8f0'}`, transition: 'border-color 0.3s' }}>
+      <div style={{ padding: '14px 14px 18px' }}>
+        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, border: `1.5px solid ${phase === 0 ? '#2563eb' : '#e2e8f0'}`, transition: 'border-color 0.3s' }}>
           <span style={{ fontSize: 13 }}>✈️</span>
-          <span style={{ fontSize: 12, color: '#0f172a', flex: 1, minHeight: 16 }}>
-            {typed}{phase === 0 && typed.length < DEMO_TEXT.length && <span style={{ animation: 'blink 1s steps(1) infinite' }}>|</span>}
+          <span style={{ fontSize: 11, color: '#0f172a', flex: 1, minHeight: 15 }}>
+            {typed}{phase === 0 && typed.length < demo.text.length && <span style={{ animation: 'blink 1s steps(1) infinite' }}>|</span>}
           </span>
-          <div style={{ background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', borderRadius: 8, padding: '3px 9px', fontSize: 11, fontWeight: 700 }}>→</div>
+          <div style={{ background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', borderRadius: 8, padding: '3px 9px', fontSize: 10, fontWeight: 700 }}>→</div>
         </div>
         {phase === 1 && (
-          <div style={{ textAlign: 'center', padding: '18px 0' }}>
+          <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 8 }}>
               {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', animation: `dotPulse 1.4s ease-in-out ${i * 0.16}s infinite` }} />)}
             </div>
-            <div style={{ fontSize: 11, color: '#94a3b8' }}>Plan wird erstellt…</div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>KI plant deinen Trip…</div>
           </div>
         )}
         {phase === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {DEMO_CARDS.slice(0, shown).map((c, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f8fafc', borderRadius: 10, padding: '9px 12px', animation: 'slideIn 0.3s ease forwards' }}>
-                <span style={{ fontSize: 16 }}>{c.emoji}</span>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#0f172a' }}>{c.title}</div>
-                  <div style={{ fontSize: 10, color: '#64748b' }}>{c.sub}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {demo.cards.slice(0, shown).map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, background: c.bg, borderRadius: 10, padding: '8px 11px', animation: 'slideIn 0.25s ease forwards' }}>
+                <span style={{ fontSize: 15 }}>{c.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: c.color, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{c.title}</div>
+                  <div style={{ fontSize: 9, color: c.color === '#fff' ? 'rgba(255,255,255,0.6)' : '#64748b' }}>{c.sub}</div>
                 </div>
               </div>
             ))}

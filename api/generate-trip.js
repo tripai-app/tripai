@@ -24,7 +24,7 @@ export default async function handler(req) {
     });
   }
 
-  const { destination, days, persons, budget, hotelCategory, interests } = body;
+  const { destination, days, persons, budget, hotelCategory, interests, includeTiktok = true, includeHiddenGems = true } = body;
 
   const hotelLabel = {
     budget: 'Hostel oder günstiges Hotel (2-Sterne, unter 50€/Nacht)',
@@ -45,14 +45,17 @@ export default async function handler(req) {
   };
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
 
+  const tiktokSection = includeTiktok ? `,"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Uhrzeit"}]` : '';
+  const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
+
   const prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
 Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}
 
-Antworte mit genau diesem JSON (alle ${days} Tage, je 3 Slots, kurze Texte):
-{"destination":"${destination}","emoji":"🏝️","heroImage":"Kurz","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Airline","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Früh buchen"}],"days":[{"dayNumber":1,"title":"Ankunft","theme":"✈️ Start","slots":[{"time":"10:00","type":"sehenswuerdigkeit","name":"Ort","description":"Kurz","duration":"2h","cost":10,"openingHours":"9-18","tips":"Tipp","tiktokWorthy":true},{"time":"13:00","type":"restaurant","name":"Restaurant","description":"Lokal","duration":"1h","cost":20,"cuisine":"Küche","mustTry":"Gericht","tiktokWorthy":false},{"time":"19:00","type":"restaurant","name":"Abendessen","description":"Abend","duration":"1.5h","cost":25,"cuisine":"Lokal","mustTry":"Spezialität","tiktokWorthy":false}],"hiddenGem":"Geheimtipp","dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"],"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Morgen"}],"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Zu Fuß"}],"budgetWithin":true,"savingTips":"Spartipp"}
+Antworte mit genau diesem JSON (alle ${days} Tage, je 3 Slots, kurze Texte max 8 Wörter):
+{"destination":"${destination}","emoji":"🏝️","heroImage":"Kurz","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Airline","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Früh buchen"}],"days":[{"dayNumber":1,"title":"Ankunft","theme":"✈️ Start","slots":[{"time":"10:00","type":"sehenswuerdigkeit","name":"Ort","description":"Kurz","duration":"2h","cost":10,"openingHours":"9-18","tips":"Tipp","tiktokWorthy":${includeTiktok}},{"time":"13:00","type":"restaurant","name":"Restaurant","description":"Lokal","duration":"1h","cost":20,"cuisine":"Küche","mustTry":"Gericht","tiktokWorthy":false},{"time":"19:00","type":"restaurant","name":"Abendessen","description":"Abend","duration":"1.5h","cost":25,"cuisine":"Lokal","mustTry":"Spezialität","tiktokWorthy":false}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Spartipp"}
 
-WICHTIG: Erstelle ALLE ${days} Tage. Kurze Beschreibungen (max 10 Wörter). Echte Namen.`;
+WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -64,7 +67,7 @@ WICHTIG: Erstelle ALLE ${days} Tage. Kurze Beschreibungen (max 10 Wörter). Echt
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: Math.min(1500 + (days * 150), 3000),
         messages: [{ role: 'user', content: prompt }],
       }),
     });
