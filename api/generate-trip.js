@@ -67,7 +67,7 @@ WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: Math.min(1500 + (days * 150), 3000),
+        max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -89,7 +89,26 @@ WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
       });
     }
 
-    const plan = JSON.parse(jsonMatch[0]);
+    let plan;
+    try {
+      plan = JSON.parse(jsonMatch[0]);
+    } catch {
+      // JSON abgeschnitten — versuche bis zur letzten gültigen Stelle zu parsen
+      let jsonStr = jsonMatch[0];
+      while (jsonStr.length > 10) {
+        try {
+          plan = JSON.parse(jsonStr + ']}]}');
+          break;
+        } catch {
+          jsonStr = jsonStr.slice(0, jsonStr.lastIndexOf(','));
+        }
+      }
+      if (!plan) {
+        return new Response(JSON.stringify({ error: 'KI-Antwort konnte nicht verarbeitet werden. Bitte nochmal versuchen.' }), {
+          status: 500, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
     return new Response(JSON.stringify({ plan }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
