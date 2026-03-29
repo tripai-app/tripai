@@ -45,57 +45,14 @@ export default async function handler(req) {
   };
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
 
-  const prompt = `Du bist ein Weltreise-Experte. Antworte NUR mit einem validen JSON-Objekt, ohne Markdown-Blöcke, ohne Erklärungen.
+  const prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
-REISEDATEN:
-- Ziel: ${destination}
-- Dauer: ${days} Tage
-- Personen: ${persons}
-- Gesamtbudget: ${budget}€
-- Unterkunft: ${hotelLabel}
-- Interessen: ${interestsList || 'Allgemein'}
+Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}
 
-REGELN:
-1. Echte Namen für Sehenswürdigkeiten, Restaurants und Hotels.
-2. Realistische Preise, Öffnungszeiten und Flugverbindungen.
-3. Jeder Tag hat genau 4 Zeitslots (Morgen, Mittag, Nachmittag, Abend).
-4. Antworte AUSSCHLIESSLICH mit dem JSON — kein Text davor oder danach.
+Antworte mit genau diesem JSON (alle ${days} Tage, je 3 Slots, kurze Texte):
+{"destination":"${destination}","emoji":"🏝️","heroImage":"Kurz","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Airline","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Früh buchen"}],"days":[{"dayNumber":1,"title":"Ankunft","theme":"✈️ Start","slots":[{"time":"10:00","type":"sehenswuerdigkeit","name":"Ort","description":"Kurz","duration":"2h","cost":10,"openingHours":"9-18","tips":"Tipp","tiktokWorthy":true},{"time":"13:00","type":"restaurant","name":"Restaurant","description":"Lokal","duration":"1h","cost":20,"cuisine":"Küche","mustTry":"Gericht","tiktokWorthy":false},{"time":"19:00","type":"restaurant","name":"Abendessen","description":"Abend","duration":"1.5h","cost":25,"cuisine":"Lokal","mustTry":"Spezialität","tiktokWorthy":false}],"hiddenGem":"Geheimtipp","dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"],"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Morgen"}],"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Zu Fuß"}],"budgetWithin":true,"savingTips":"Spartipp"}
 
-JSON-Struktur:
-{
-  "destination": "${destination}",
-  "emoji": "Länder-Emoji",
-  "heroImage": "Kurze Ortsbeschreibung",
-  "hotels": [
-    { "name": "Hotelname", "stars": 3, "pricePerNight": 85, "location": "Lage", "highlight": "Besonderheit", "bookingSearch": "Suchbegriff" }
-  ],
-  "flights": [
-    { "airline": "Airline", "type": "Direktflug", "duration": "2h 30min", "priceFrom": 89, "tip": "Buchtipp" }
-  ],
-  "days": [
-    {
-      "dayNumber": 1,
-      "title": "Ankunft & Erkundung",
-      "theme": "🌟 Thema",
-      "slots": [
-        { "time": "09:00", "type": "sehenswuerdigkeit", "name": "Name", "description": "Beschreibung", "duration": "2 Stunden", "cost": 15, "openingHours": "09:00-18:00", "tips": "Tipp", "tiktokWorthy": true },
-        { "time": "12:30", "type": "restaurant", "name": "Restaurant", "description": "Essen", "duration": "1 Stunde", "cost": 20, "cuisine": "Küche", "mustTry": "Gericht", "tiktokWorthy": false },
-        { "time": "15:00", "type": "sehenswuerdigkeit", "name": "Name", "description": "Beschreibung", "duration": "2 Stunden", "cost": 10, "openingHours": "10:00-17:00", "tips": "Tipp", "tiktokWorthy": false },
-        { "time": "19:00", "type": "restaurant", "name": "Abendessen", "description": "Abendessen", "duration": "1.5 Stunden", "cost": 30, "cuisine": "Küche", "mustTry": "Gericht", "tiktokWorthy": false }
-      ],
-      "hiddenGem": "Geheimtipp",
-      "dailyCostEstimate": 120
-    }
-  ],
-  "costs": { "transport": 180, "hotel": 480, "essen": 350, "aktivitaeten": 190, "gesamt": 1200 },
-  "tips": ["Tipp 1", "Tipp 2", "Tipp 3"],
-  "tiktokSpots": [{ "name": "Spot", "reason": "Warum viral", "bestTime": "Uhrzeit" }],
-  "hiddenGems": [{ "name": "Geheimtipp", "description": "Besonderheit", "howToGet": "Anfahrt" }],
-  "budgetWithin": true,
-  "savingTips": "Spartipps"
-}
-
-Erstelle ALLE ${days} Tage (dayNumber 1 bis ${days}), jeweils mit genau 4 Slots.`;
+WICHTIG: Erstelle ALLE ${days} Tage. Kurze Beschreibungen (max 10 Wörter). Echte Namen.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -107,7 +64,7 @@ Erstelle ALLE ${days} Tage (dayNumber 1 bis ${days}), jeweils mit genau 4 Slots.
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 6000,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
