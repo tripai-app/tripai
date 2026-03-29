@@ -57,7 +57,13 @@ export default function App() {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Server-Fehler: ' + text.slice(0, 200));
+      }
 
       if (!response.ok || data.error) {
         throw new Error(data.error || 'Fehler beim Generieren');
