@@ -170,7 +170,8 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
               </div>
             </div>
             <input ref={sliderRef} type="range" min="300" max="10000" step="100"
-              defaultValue={form.budget}
+              value={form.budget}
+              onChange={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
               style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
