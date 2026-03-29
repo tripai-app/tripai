@@ -102,7 +102,7 @@ export default function App() {
         )}
 
         {page === 'itinerary' && plan && (
-          <AIItinerary plan={plan} onBack={handleBack} onNewTrip={handleNewTrip} />
+          <AIItinerary plan={plan} onBack={handleBack} onNewTrip={handleNewTrip} onHome={() => navigate('home')} />
         )}
       </div>
     </ErrorBoundary>

@@ -98,7 +98,7 @@ function DayCard({ day }) {
   );
 }
 
-export default function AIItinerary({ plan, onBack, onNewTrip }) {
+export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
   const isMobile = useIsMobile();
   const [toast, setToast] = useState('');
   const [isFav, setIsFav] = useState(() => {
@@ -146,13 +146,23 @@ export default function AIItinerary({ plan, onBack, onNewTrip }) {
       {/* HEADER */}
       <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9', padding: '20px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <button onClick={onBack} style={{
-            background: 'none', border: 'none', color: '#94a3b8', fontSize: 13,
-            fontWeight: 600, cursor: 'pointer', padding: 0, marginBottom: 14,
-            display: 'flex', alignItems: 'center', gap: 5,
-          }}>
-            ← Zurück
-          </button>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <button onClick={onBack} style={{
+              background: 'none', border: 'none', color: '#94a3b8', fontSize: 13,
+              fontWeight: 600, cursor: 'pointer', padding: 0,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              ← Neue Reise planen
+            </button>
+            <span style={{ color: '#e2e8f0' }}>·</span>
+            <button onClick={onHome} style={{
+              background: 'none', border: 'none', color: '#94a3b8', fontSize: 13,
+              fontWeight: 600, cursor: 'pointer', padding: 0,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              🏠 Startseite
+            </button>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <span style={{ fontSize: 44, lineHeight: 1 }}>{plan.emoji || '✈️'}</span>

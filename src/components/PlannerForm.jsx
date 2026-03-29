@@ -28,6 +28,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     interests: ['kultur', 'essen'],
     includeTiktok: true,
     includeHiddenGems: true,
+    wishes: '',
   });
 
   useEffect(() => {
@@ -223,6 +224,27 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 );
               })}
             </div>
+          </div>
+
+          {/* Eigene Wünsche */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 10 }}>EIGENE WÜNSCHE <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
+            <textarea
+              value={form.wishes}
+              onChange={e => setForm(f => ({ ...f, wishes: e.target.value }))}
+              placeholder="z.B. Ich möchte unbedingt ein Museum besuchen und lokale Märkte erkunden…"
+              maxLength={300}
+              rows={3}
+              style={{
+                width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 12,
+                padding: '12px 14px', fontSize: 14, color: '#0f172a', resize: 'none',
+                outline: 'none', fontFamily: 'inherit', lineHeight: 1.5,
+                background: '#f8fafc', boxSizing: 'border-box', transition: 'border-color 0.2s',
+              }}
+              onFocus={e => e.target.style.borderColor = '#2563eb'}
+              onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+            />
+            <div style={{ fontSize: 11, color: '#cbd5e1', textAlign: 'right', marginTop: 4 }}>{form.wishes.length}/300</div>
           </div>
 
           {/* Extras */}

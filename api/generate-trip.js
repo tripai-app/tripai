@@ -24,7 +24,7 @@ export default async function handler(req) {
     });
   }
 
-  const { destination, days, persons, budget, hotelCategory, interests, includeTiktok = true, includeHiddenGems = true } = body;
+  const { destination, days, persons, budget, hotelCategory, interests, includeTiktok = true, includeHiddenGems = true, wishes = '' } = body;
 
   const hotelLabel = {
     budget: 'Hostel oder günstiges Hotel (2-Sterne, unter 50€/Nacht)',
@@ -50,7 +50,7 @@ export default async function handler(req) {
 
   const prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
-Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}
+Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}
 
 Antworte mit genau diesem JSON (alle ${days} Tage, je 3 Slots, kurze Texte max 8 Wörter):
 {"destination":"${destination}","emoji":"🏝️","heroImage":"Kurz","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Airline","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Früh buchen"}],"days":[{"dayNumber":1,"title":"Ankunft","theme":"✈️ Start","slots":[{"time":"10:00","type":"sehenswuerdigkeit","name":"Ort","description":"Kurz","duration":"2h","cost":10,"openingHours":"9-18","tips":"Tipp","tiktokWorthy":${includeTiktok}},{"time":"13:00","type":"restaurant","name":"Restaurant","description":"Lokal","duration":"1h","cost":20,"cuisine":"Küche","mustTry":"Gericht","tiktokWorthy":false},{"time":"19:00","type":"restaurant","name":"Abendessen","description":"Abend","duration":"1.5h","cost":25,"cuisine":"Lokal","mustTry":"Spezialität","tiktokWorthy":false}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Spartipp"}
