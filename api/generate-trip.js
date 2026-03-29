@@ -1,17 +1,30 @@
-// Vercel Serverless Function — Claude AI Trip Generator
-export const config = { maxDuration: 30 };
+// Vercel Edge Function — Claude AI Trip Generator (30s limit on Hobby plan)
+export const config = { runtime: 'edge' };
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405, headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key nicht konfiguriert' });
+    return new Response(JSON.stringify({ error: 'API Key nicht konfiguriert' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  const { destination, days, persons, budget, hotelCategory, interests } = req.body;
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Ungültige Anfrage' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const { destination, days, persons, budget, hotelCategory, interests } = body;
 
   const hotelLabel = {
     budget: 'Hostel oder günstiges Hotel (2-Sterne, unter 50€/Nacht)',
@@ -32,7 +45,7 @@ export default async function handler(req, res) {
   };
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
 
-  const prompt = `Du bist ein Weltreise-Experte mit Kenntnissen über JEDEN Ort der Erde. Antworte NUR mit einem validen JSON-Objekt, ohne Markdown-Blöcke, ohne Erklärungen.
+  const prompt = `Du bist ein Weltreise-Experte. Antworte NUR mit einem validen JSON-Objekt, ohne Markdown-Blöcke, ohne Erklärungen.
 
 REISEDATEN:
 - Ziel: ${destination}
@@ -42,111 +55,47 @@ REISEDATEN:
 - Unterkunft: ${hotelLabel}
 - Interessen: ${interestsList || 'Allgemein'}
 
-WICHTIGE REGELN:
-1. JEDER Ort weltweit funktioniert — ob Weltstadt, kleines Dorf, Insel, Wüste oder Bergregion.
-2. Verwende echte, bekannte Namen für Sehenswürdigkeiten, Restaurants und Hotels des jeweiligen Ortes.
-3. Falls es sich um einen kleinen/unbekannten Ort handelt: Beschreibe die Region authentisch, nenne typische lokale Gerichte, landschaftliche Highlights und nahe gelegene Attraktionen.
-4. Bei Flügen: Nenne realistische Flugverbindungen (ggf. über nächstgelegenen Flughafen). Für sehr abgelegene Orte: Zeige die beste Anreiseroute (Flug + Bus/Bahn/Auto).
-5. Öffnungszeiten, Preise und Details so genau wie möglich — bei Unsicherheit realistische Schätzungen.
-6. Restaurants: Typische Landesküche, echte Gerichte, Preisklasse, Besonderheit.
-7. Jeder Tag soll 4-6 abwechslungsreiche Zeitslots haben — kein Tag soll sich wiederholen.
+REGELN:
+1. Echte Namen für Sehenswürdigkeiten, Restaurants und Hotels.
+2. Realistische Preise, Öffnungszeiten und Flugverbindungen.
+3. Jeder Tag hat genau 4 Zeitslots (Morgen, Mittag, Nachmittag, Abend).
+4. Antworte AUSSCHLIESSLICH mit dem JSON — kein Text davor oder danach.
 
-Gib folgendes JSON zurück:
+JSON-Struktur:
 {
   "destination": "${destination}",
   "emoji": "Länder-Emoji",
-  "heroImage": "Beschreibung des Ortes für Alt-Text",
+  "heroImage": "Kurze Ortsbeschreibung",
   "hotels": [
-    {
-      "name": "Echter Hotelname",
-      "stars": 3,
-      "pricePerNight": 85,
-      "location": "Stadtviertel/Lage",
-      "highlight": "Besonderheit des Hotels",
-      "bookingSearch": "Suchbegriff für Booking.com"
-    }
+    { "name": "Hotelname", "stars": 3, "pricePerNight": 85, "location": "Lage", "highlight": "Besonderheit", "bookingSearch": "Suchbegriff" }
   ],
   "flights": [
-    {
-      "airline": "Airline Name",
-      "type": "Direktflug oder 1 Zwischenstopp",
-      "duration": "ca. 2h 30min",
-      "priceFrom": 89,
-      "tip": "Günstigster Buchtipp"
-    }
+    { "airline": "Airline", "type": "Direktflug", "duration": "2h 30min", "priceFrom": 89, "tip": "Buchtipp" }
   ],
   "days": [
     {
       "dayNumber": 1,
-      "title": "Ankunft & erste Erkundung",
-      "theme": "emoji + kurzes Thema",
+      "title": "Ankunft & Erkundung",
+      "theme": "🌟 Thema",
       "slots": [
-        {
-          "time": "09:00",
-          "type": "sehenswuerdigkeit",
-          "name": "Echter Name",
-          "description": "Was man hier erlebt",
-          "duration": "2 Stunden",
-          "cost": 15,
-          "openingHours": "Mo-So 09:00-18:00",
-          "tips": "Insider-Tipp z.B. früh kommen wegen Schlangen",
-          "guide": "Optionaler Guide-Tipp",
-          "tiktokWorthy": true
-        },
-        {
-          "time": "12:30",
-          "type": "restaurant",
-          "name": "Echter Restaurantname",
-          "description": "Was man essen sollte",
-          "duration": "1 Stunde",
-          "cost": 25,
-          "cuisine": "Küche",
-          "mustTry": "Gericht das man probieren muss",
-          "tiktokWorthy": false
-        }
+        { "time": "09:00", "type": "sehenswuerdigkeit", "name": "Name", "description": "Beschreibung", "duration": "2 Stunden", "cost": 15, "openingHours": "09:00-18:00", "tips": "Tipp", "tiktokWorthy": true },
+        { "time": "12:30", "type": "restaurant", "name": "Restaurant", "description": "Essen", "duration": "1 Stunde", "cost": 20, "cuisine": "Küche", "mustTry": "Gericht", "tiktokWorthy": false },
+        { "time": "15:00", "type": "sehenswuerdigkeit", "name": "Name", "description": "Beschreibung", "duration": "2 Stunden", "cost": 10, "openingHours": "10:00-17:00", "tips": "Tipp", "tiktokWorthy": false },
+        { "time": "19:00", "type": "restaurant", "name": "Abendessen", "description": "Abendessen", "duration": "1.5 Stunden", "cost": 30, "cuisine": "Küche", "mustTry": "Gericht", "tiktokWorthy": false }
       ],
-      "hiddenGem": "Ein geheimer Tipp für diesen Tag",
+      "hiddenGem": "Geheimtipp",
       "dailyCostEstimate": 120
     }
   ],
-  "costs": {
-    "transport": 180,
-    "hotel": 480,
-    "essen": 350,
-    "aktivitaeten": 190,
-    "gesamt": 1200
-  },
-  "tips": [
-    "Insider-Tipp 1",
-    "Insider-Tipp 2",
-    "Insider-Tipp 3"
-  ],
-  "tiktokSpots": [
-    {
-      "name": "Spot Name",
-      "reason": "Warum es viral geht",
-      "bestTime": "Beste Uhrzeit für Fotos"
-    }
-  ],
-  "hiddenGems": [
-    {
-      "name": "Geheimtipp Name",
-      "description": "Was es besonders macht",
-      "howToGet": "Wie man hinkommt"
-    }
-  ],
+  "costs": { "transport": 180, "hotel": 480, "essen": 350, "aktivitaeten": 190, "gesamt": 1200 },
+  "tips": ["Tipp 1", "Tipp 2", "Tipp 3"],
+  "tiktokSpots": [{ "name": "Spot", "reason": "Warum viral", "bestTime": "Uhrzeit" }],
+  "hiddenGems": [{ "name": "Geheimtipp", "description": "Besonderheit", "howToGet": "Anfahrt" }],
   "budgetWithin": true,
-  "savingTips": "Tipps wie man noch mehr sparen kann"
+  "savingTips": "Spartipps"
 }
 
-WICHTIG:
-- Nutze ${days} Tage (dayNumber 1 bis ${days})
-- Jeder Tag soll 4-6 Zeitslots haben (Morgen, Mittag, Nachmittag, Abend)
-- ECHTE Namen verwenden, keine Platzhalter
-- Öffnungszeiten so genau wie möglich
-- tiktokWorthy: true bei besonders fotogenen Orten
-- hiddenGem pro Tag: ein lokaler Geheimtipp, der nicht in jedem Reiseführer steht
-- Antworte AUSSCHLIESSLICH mit dem JSON-Objekt — kein Text davor oder danach`;
+Erstelle ALLE ${days} Tage (dayNumber 1 bis ${days}), jeweils mit genau 4 Slots.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -158,29 +107,36 @@ WICHTIG:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 6000,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(500).json({ error: 'KI-Fehler: ' + err });
+      return new Response(JSON.stringify({ error: 'KI-Fehler: ' + err }), {
+        status: 500, headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
     const text = data.content[0].text.trim();
 
-    // JSON aus Antwort extrahieren
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return res.status(500).json({ error: 'Ungültige KI-Antwort' });
+      return new Response(JSON.stringify({ error: 'Ungültige KI-Antwort' }), {
+        status: 500, headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const plan = JSON.parse(jsonMatch[0]);
-    return res.status(200).json({ plan });
+    return new Response(JSON.stringify({ plan }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
 
   } catch (err) {
-    return res.status(500).json({ error: 'Serverfehler: ' + err.message });
+    return new Response(JSON.stringify({ error: 'Serverfehler: ' + err.message }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
