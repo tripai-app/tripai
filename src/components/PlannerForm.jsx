@@ -157,7 +157,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             <input type="range" min="300" max="10000" step="100"
               value={form.budget}
               onChange={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
-              style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer', height: 4 }}
+              style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
               <span style={{ fontSize: 11, color: '#cbd5e1' }}>300€</span>
