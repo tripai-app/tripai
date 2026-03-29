@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const interests = [
   { id: 'kultur', label: '🏛️ Kultur' },
@@ -44,6 +44,19 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
   };
 
   const budgetPerPerson = Math.round(form.budget / form.persons);
+  const sliderRef = useRef(null);
+
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    const update = (e) => setForm(f => ({ ...f, budget: parseInt(e.target.value) }));
+    slider.addEventListener('input', update);
+    slider.addEventListener('change', update);
+    return () => {
+      slider.removeEventListener('input', update);
+      slider.removeEventListener('change', update);
+    };
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: '#eef2ff' }}>
@@ -154,10 +167,8 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>≈ {budgetPerPerson}€/Person</span>
               </div>
             </div>
-            <input type="range" min="300" max="10000" step="100"
-              value={form.budget}
-              onChange={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
-              onInput={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
+            <input ref={sliderRef} type="range" min="300" max="10000" step="100"
+              defaultValue={form.budget}
               style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
