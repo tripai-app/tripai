@@ -152,15 +152,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
               fontWeight: 600, cursor: 'pointer', padding: 0,
               display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ← Neue Reise planen
-            </button>
-            <span style={{ color: '#e2e8f0' }}>·</span>
-            <button onClick={onHome} style={{
-              background: 'none', border: 'none', color: '#94a3b8', fontSize: 13,
-              fontWeight: 600, cursor: 'pointer', padding: 0,
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              🏠 Startseite
+              ← Zur Startseite
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>

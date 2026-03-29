@@ -40,7 +40,7 @@ export default function App() {
 
   const handleStartPlanning = () => { setDefaultDestination(''); navigate('planner'); };
   const handlePlanDestination = (dest) => { setDefaultDestination(dest); navigate('planner'); };
-  const handleBack = () => navigate('planner');
+  const handleBack = () => navigate('home');
   const handleNewTrip = () => { setDefaultDestination(''); setPlan(null); navigate('planner'); };
 
   const handleGenerate = async (formData) => {
