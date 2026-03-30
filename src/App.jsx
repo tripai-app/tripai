@@ -98,6 +98,28 @@ export default function App() {
       includeTiktok: true, includeHiddenGems: true, wishes: '' });
   };
 
+  // ── Response-Cache: gleiche Anfrage innerhalb 24h aus localStorage ──
+  const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 Stunden
+
+  const getCacheKey = (fd) => {
+    const interests = [...(fd.interests || [])].sort().join(',');
+    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}`;
+  };
+
+  const readCache = (key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const { plan, ts } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(key); return null; }
+      return plan;
+    } catch { return null; }
+  };
+
+  const writeCache = (key, plan) => {
+    try { localStorage.setItem(key, JSON.stringify({ plan, ts: Date.now() })); } catch {}
+  };
+
   const handleGenerate = async (formData) => {
     setLoading(true);
     setError(null);
@@ -105,6 +127,17 @@ export default function App() {
     setPlannedDestination(formData.destination);
     navigate('loading');
     window.scrollTo({ top: 0 });
+
+    const cacheKey = getCacheKey(formData);
+    const cached = readCache(cacheKey);
+
+    if (cached) {
+      // Cache-Treffer: sofort anzeigen ohne API-Aufruf
+      setPlan({ ...cached, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
+      setLoading(false);
+      navigate('itinerary');
+      return;
+    }
 
     try {
       const response = await fetch('/api/generate-trip', {
@@ -125,6 +158,7 @@ export default function App() {
         throw new Error(data.error || 'Fehler beim Generieren');
       }
 
+      writeCache(cacheKey, data.plan);
       setPlan({ ...data.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
       navigate('itinerary');
     } catch (err) {
