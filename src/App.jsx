@@ -145,42 +145,43 @@ export default function App() {
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        let msg;
-        try { msg = JSON.parse(errText).error; } catch { msg = errText.slice(0, 200); }
-        throw new Error(msg || 'Fehler beim Generieren');
-      }
+      // Antwort als Text lesen (funktioniert für SSE und JSON gleichermaßen)
+      const rawText = await response.text();
 
-      // SSE-Stream lesen
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
-
-        for (const line of lines) {
+      // Hilfsfunktion: Plan aus Text extrahieren (SSE oder JSON)
+      const extractPlan = (text) => {
+        // SSE-Format: "data: {"type":"done","plan":{...}}"
+        const sseLines = text.split('\n');
+        for (const line of sseLines) {
           if (!line.startsWith('data: ')) continue;
-          let event;
-          try { event = JSON.parse(line.slice(6)); } catch { continue; }
-
-          if (event.type === 'done' && event.plan) {
-            writeCache(cacheKey, event.plan);
-            setPlan({ ...event.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
-            navigate('itinerary');
-            return;
-          } else if (event.type === 'error') {
-            throw new Error(event.message);
-          }
-          // type:'chunk' → Heartbeat, nichts tun
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'done' && event.plan) return { plan: event.plan };
+            if (event.type === 'error') return { error: event.message };
+          } catch {}
         }
+        // Altes JSON-Format: {"plan":{...}}
+        try {
+          const data = JSON.parse(rawText);
+          if (data.plan) return { plan: data.plan };
+          if (data.error) return { error: data.error };
+        } catch {}
+        return null;
+      };
+
+      if (!response.ok) {
+        const result = extractPlan(rawText);
+        throw new Error(result?.error || rawText.slice(0, 150) || 'Fehler beim Generieren');
       }
+
+      const result = extractPlan(rawText);
+      if (!result) throw new Error('Keine gültige Antwort vom Server. Bitte nochmal versuchen.');
+      if (result.error) throw new Error(result.error);
+
+      writeCache(cacheKey, result.plan);
+      setPlan({ ...result.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
+      navigate('itinerary');
+
     } catch (err) {
       setError(err.message);
       navigate('planner');
