@@ -1,2 +1,5 @@
 /* Reset default vite styles */
 #root { min-height: 100vh; text-align: left; width: 100%; max-width: 100%; border: none; }
+
+/* Dark Mode: Bilder counter-invertieren */
+.dark-mode img { filter: invert(100%) hue-rotate(180deg); }

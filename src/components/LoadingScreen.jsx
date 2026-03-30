@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 
-const STEPS = [
-  'Echte Hotels werden gesucht…',
-  'Restaurants & lokale Küche gefunden…',
-  'Sehenswürdigkeiten & Timings geplant…',
-  'Budget wird kalkuliert…',
-  'Geheimtipps & TikTok-Spots ergänzt…',
-];
+function getSteps(destination) {
+  const d = destination || 'deinem Ziel';
+  return [
+    `Die besten Hotels in ${d} werden gesucht…`,
+    `Geheime Restaurants in ${d} werden ausgegraben…`,
+    `Deinen perfekten Tag in ${d} planen…`,
+    `Budget für ${d} wird optimiert…`,
+    `Letzte Geheimtipps für ${d} ergänzen…`,
+  ];
+}
 
 export default function LoadingScreen({ destination }) {
   const [activeStep, setActiveStep] = useState(0);
+  const STEPS = getSteps(destination);
 
   useEffect(() => {
     const interval = setInterval(() => {

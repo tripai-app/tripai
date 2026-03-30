@@ -1,10 +1,12 @@
-import { useState, Component } from 'react';
+import { useState, useEffect, Component } from 'react';
 import './App.css';
+import { Analytics } from '@vercel/analytics/react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PlannerForm from './components/PlannerForm';
 import AIItinerary from './components/AIItinerary';
 import LoadingScreen from './components/LoadingScreen';
+import CompareView from './components/CompareView';
 
 /* ── ErrorBoundary: fängt alle React Crashes auf ── */
 class ErrorBoundary extends Component {
@@ -46,10 +48,29 @@ export default function App() {
   const [defaultDestination, setDefaultDestination] = useState('');
   const [plannedDestination, setPlannedDestination] = useState('');
   const [plan, setPlan] = useState(null);
+  const [lastFormData, setLastFormData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('tripai_dark') === '1');
+
+  const toggleDark = () => setDarkMode(d => {
+    const next = !d;
+    localStorage.setItem('tripai_dark', next ? '1' : '0');
+    return next;
+  });
 
   const navigate = (p) => { setPage(p); window.scrollTo({ top: 0 }); };
+
+  // URL-Params beim Start lesen (geteilter Link)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const dest = params.get('dest');
+    if (dest) {
+      setDefaultDestination(decodeURIComponent(dest));
+      navigate('planner');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const handleStartPlanning = () => { setDefaultDestination(''); navigate('planner'); };
   const handlePlanDestination = (dest) => { setDefaultDestination(dest); navigate('planner'); };
@@ -79,6 +100,7 @@ export default function App() {
   const handleGenerate = async (formData) => {
     setLoading(true);
     setError(null);
+    setLastFormData(formData);
     setPlannedDestination(formData.destination);
     navigate('loading');
     window.scrollTo({ top: 0 });
@@ -114,8 +136,9 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div>
-        <Navbar page={page} onNavigate={navigate} />
+      <div style={{ filter: darkMode ? 'invert(92%) hue-rotate(180deg)' : 'none', minHeight: '100vh' }}
+           className={darkMode ? 'dark-mode' : ''}>
+        <Navbar page={page} onNavigate={navigate} darkMode={darkMode} onToggleDark={toggleDark} />
 
         {page === 'home' && (
           <Hero
@@ -139,10 +162,25 @@ export default function App() {
           <LoadingScreen destination={plannedDestination} />
         )}
 
+        {page === 'compare' && (
+          <CompareView
+            favorites={(() => { try { return JSON.parse(localStorage.getItem('tripai_favorites') || '[]'); } catch { return []; } })()}
+            onBack={() => navigate('home')}
+          />
+        )}
+
         {page === 'itinerary' && plan && (
-          <AIItinerary plan={plan} onBack={handleBack} onNewTrip={handleNewTrip} onHome={() => navigate('home')} />
+          <AIItinerary
+            plan={plan}
+            onBack={handleBack}
+            onNewTrip={handleNewTrip}
+            onHome={() => navigate('home')}
+            onRegenerate={() => lastFormData && handleGenerate(lastFormData)}
+            onRegenerateWithBudget={(budget) => lastFormData && handleGenerate({ ...lastFormData, budget })}
+          />
         )}
       </div>
+      <Analytics />
     </ErrorBoundary>
   );
 }

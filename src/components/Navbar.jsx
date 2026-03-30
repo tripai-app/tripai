@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-function FavoritesMenu({ onClose, onNavigate }) {
+function FavoritesMenu({ onClose, onNavigate, onCompare }) {
   const [favs, setFavs] = useState([]);
   const ref = useRef(null);
 
@@ -52,7 +52,12 @@ function FavoritesMenu({ onClose, onNavigate }) {
           ))}
         </div>
       )}
-      <div style={{ padding: '10px 20px' }}>
+      <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {favs.length >= 2 && (
+          <button onClick={() => { onCompare(); onClose(); }} style={{ width: '100%', background: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            📊 Reisen vergleichen
+          </button>
+        )}
         <button onClick={() => { onNavigate('planner'); onClose(); }} style={{ width: '100%', background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           ✈️ Neue Reise planen
         </button>
@@ -61,7 +66,7 @@ function FavoritesMenu({ onClose, onNavigate }) {
   );
 }
 
-export default function Navbar({ page, onNavigate }) {
+export default function Navbar({ page, onNavigate, darkMode, onToggleDark }) {
   const [showFavs, setShowFavs] = useState(false);
   const [favCount, setFavCount] = useState(0);
   const active = page === 'planner' || page === 'loading';
@@ -104,6 +109,14 @@ export default function Navbar({ page, onNavigate }) {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={onToggleDark} title={darkMode ? 'Light Mode' : 'Dark Mode'} style={{
+            background: '#f8fafc', border: '1px solid #e2e8f0',
+            borderRadius: 50, padding: '7px 12px', cursor: 'pointer',
+            fontSize: 16, lineHeight: 1, transition: 'all 0.2s',
+          }}>
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+
           <button onClick={() => setShowFavs(v => !v)} style={{
             background: showFavs ? '#fff1f2' : '#f8fafc',
             border: `1px solid ${showFavs ? '#fecaca' : '#e2e8f0'}`,
@@ -128,7 +141,7 @@ export default function Navbar({ page, onNavigate }) {
           </button>
         </div>
 
-        {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} />}
+        {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onCompare={() => onNavigate('compare')} />}
       </div>
     </nav>
   );

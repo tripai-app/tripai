@@ -256,6 +256,12 @@ const destinations = [
   { name: 'Barcelona', emoji: '🇪🇸', tag: 'Gaudí & Strand', img: 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&h=500&fit=crop&q=85' },
   { name: 'Paris', emoji: '🇫🇷', tag: 'Stadt der Liebe', img: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=500&fit=crop&q=85' },
   { name: 'Thailand', emoji: '🇹🇭', tag: 'Exotik & Meer', img: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&h=500&fit=crop&q=85' },
+  { name: 'Prag', emoji: '🇨🇿', tag: 'Märchenstadt an der Moldau', img: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=800&h=500&fit=crop&q=85' },
+  { name: 'Budapest', emoji: '🇭🇺', tag: 'Perle der Donau', img: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=800&h=500&fit=crop&q=85' },
+  { name: 'Santorini', emoji: '🇬🇷', tag: 'Blaue Kuppeln & Sonnenuntergang', img: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=800&h=500&fit=crop&q=85' },
+  { name: 'Marrakesch', emoji: '🇲🇦', tag: 'Farben & Gewürze', img: 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=800&h=500&fit=crop&q=85' },
+  { name: 'Lissabon', emoji: '🇵🇹', tag: 'Fado & Pastéis', img: 'https://images.unsplash.com/photo-1588625500633-a0cd518f0f2a?w=800&h=500&fit=crop&q=85' },
+  { name: 'Dubai', emoji: '🇦🇪', tag: 'Luxus & Wüste', img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&h=500&fit=crop&q=85' },
 ];
 
 /* ── Responsive breakpoint ─────────────────────────── */
@@ -398,7 +404,7 @@ export default function Hero({ onStartPlanning, onPlanDestination, onSurpriseTri
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
             {destinations.slice(0, 2).map((d) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} big />)}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: 14 }}>
             {destinations.slice(2).map((d) => <DestCard key={d.name} dest={d} onPlan={onPlanDestination} />)}
           </div>
         </div>
@@ -435,12 +441,44 @@ export default function Hero({ onStartPlanning, onPlanDestination, onSurpriseTri
       </section>
 
       {/* ── FOOTER ───────────────────────────────── */}
-      <footer style={{ background: '#080d1a', padding: '28px 24px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 18 }}>✈️</span>
-          <strong style={{ color: '#fff', fontSize: 16, letterSpacing: '-0.3px' }}>Trip<span style={{ color: '#60a5fa' }}>AI</span></strong>
+      <footer style={{ background: '#080d1a', padding: '48px 24px 32px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 32, marginBottom: 40 }}>
+            {/* Brand */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 20 }}>✈️</span>
+                <strong style={{ color: '#fff', fontSize: 18, letterSpacing: '-0.5px' }}>Trip<span style={{ color: '#60a5fa' }}>AI</span></strong>
+              </div>
+              <p style={{ color: '#475569', fontSize: 13, lineHeight: 1.7, maxWidth: 220, margin: 0 }}>
+                KI-Reiseplaner für jeden Ort der Welt. Kostenlos & ohne Account.
+              </p>
+            </div>
+            {/* Links */}
+            <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 14 }}>Produkt</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[['Reise planen', null], ['Überraschungsreise', null], ['Low Budget Trips', null]].map(([label]) => (
+                    <span key={label} style={{ color: '#475569', fontSize: 13, cursor: 'default' }}>{label}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 14 }}>Kontakt</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <a href="mailto:hello@tripai-app.com" style={{ color: '#475569', fontSize: 13, textDecoration: 'none' }}>hello@tripai-app.com</a>
+                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" style={{ color: '#475569', fontSize: 13, textDecoration: 'none' }}>Instagram</a>
+                  <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" style={{ color: '#475569', fontSize: 13, textDecoration: 'none' }}>TikTok</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            <p style={{ fontSize: 12, color: '#334155', margin: 0 }}>© 2026 TripAI · Alle Preise sind Schätzungen · Keine Haftung für Buchungen</p>
+            <p style={{ fontSize: 12, color: '#1e293b', margin: 0 }}>Made with ❤️ &amp; AI</p>
+          </div>
         </div>
-        <p style={{ fontSize: 12, color: '#334155' }}>© 2025 TripAI · Kostenlos · Kein Account erforderlich</p>
       </footer>
 
       <style>{`

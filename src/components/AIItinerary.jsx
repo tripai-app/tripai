@@ -1,6 +1,143 @@
 import { useState, useEffect } from 'react';
 import AffiliateSection from './AffiliateSection';
 
+function generatePacklist(plan) {
+  const dest = (plan.destination || '').toLowerCase();
+  const slots = plan.days?.flatMap(d => d.slots || []) || [];
+  const types = slots.map(s => s.type);
+  const hasBeach = types.includes('strand') || /bali|thailand|malediven|ibiza|mallorca|karibik|miami|hawaii/.test(dest);
+  const hasHike = types.includes('aktivitaet') || /berg|alpen|nepal|trekking|island|reykjavik/.test(dest);
+  const hasCity = types.includes('sehenswuerdigkeit') || types.includes('museum');
+  const hasCulture = types.includes('sehenswuerdigkeit') || /tokio|kyoto|rom|athen|istanbul|delhi|marrakech|marrakesch/.test(dest);
+  const isAsia = /japan|tokio|kyoto|bangkok|thailand|bali|vietnam|hanoi|singapur|chiang mai/.test(dest);
+  const isDubai = /dubai|abu dhabi/.test(dest);
+
+  const items = {
+    '📋 Dokumente': ['Reisepass / Personalausweis', 'Flugtickets (ausgedruckt + digital)', 'Krankenversicherungskarte', 'Hotel-Buchungsbestätigungen'],
+    '👕 Kleidung': ['Bequeme Laufschuhe', 'Wechselkleidung für alle Tage', 'Leichte Jacke / Windbreaker'],
+    '🔌 Elektronik': ['Ladekabel (Handy + sonstige)', 'Reisestecker-Adapter', 'Powerbank'],
+    '🧴 Hygiene': ['Zahnbürste & Zahnpasta', 'Deodorant', 'Sonnencreme SPF 50'],
+  };
+
+  if (hasBeach) {
+    items['🏖️ Strand & Sommer'] = ['Badeanzug / Badehose', 'Schnorchel-Set', 'Strandtuch', 'Mückenspray'];
+  }
+  if (hasHike) {
+    items['🥾 Outdoor'] = ['Wanderschuhe', 'Rucksack (20–30L)', 'Wandersocken', 'Regenschutz'];
+  }
+  if (hasCity || hasCulture) {
+    items['🏙️ Stadtbesuch'] = ['Stadtplan oder Offline-Karte', 'Beutel / Tagesrucksack', 'Kamera oder gutes Handy'];
+  }
+  if (isAsia) {
+    items['🌏 Asien-Tipps'] = ['Bargeld (Lokale Währung)', 'Stäbchen-Etikette beachten', 'Leichte Kleidung zum Bedecken (Tempel)', 'Magenmittel'];
+  }
+  if (isDubai) {
+    items['🕌 Dubai-Tipps'] = ['Bedeckende Kleidung für Moscheen', 'Sonnenschutz für extreme Hitze', 'Kopfbedeckung'];
+  }
+
+  return items;
+}
+
+const WEATHER_ICONS = { 0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌧️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',85:'❄️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️' };
+
+function WeatherAndMap({ destination }) {
+  const [geo, setGeo] = useState(null);
+  const [weather, setWeather] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const gRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(destination)}&count=1&language=de`);
+        const gData = await gRes.json();
+        const loc = gData.results?.[0];
+        if (!loc || cancelled) return;
+        setGeo(loc);
+        const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=5`);
+        const wData = await wRes.json();
+        if (!cancelled) setWeather(wData.daily);
+      } catch {}
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [destination]);
+
+  if (!geo) return null;
+
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      {/* Wetter */}
+      {weather && (
+        <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>🌤️ Wetter in {destination}</div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+            {weather.time?.slice(0, 5).map((date, i) => {
+              const d = new Date(date);
+              return (
+                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>{days[d.getDay()]}</div>
+                  <div style={{ fontSize: 20 }}>{WEATHER_ICONS[weather.weathercode?.[i]] || '🌤️'}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{Math.round(weather.temperature_2m_max?.[i])}°</div>
+                  <div style={{ fontSize: 10, color: '#94a3b8' }}>{Math.round(weather.temperature_2m_min?.[i])}°</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {/* Karte */}
+      <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', marginBottom: 14 }}>
+        <iframe
+          title={`Karte ${destination}`}
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.longitude - 0.15},${geo.latitude - 0.15},${geo.longitude + 0.15},${geo.latitude + 0.15}&layer=mapnik&marker=${geo.latitude},${geo.longitude}`}
+          style={{ width: '100%', height: 200, border: 'none', display: 'block' }}
+          loading="lazy"
+        />
+        <div style={{ padding: '10px 16px' }}>
+          <a href={`https://www.google.com/maps/search/${encodeURIComponent(destination)}`} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 13, color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+            In Google Maps öffnen →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PackingList({ plan }) {
+  const [open, setOpen] = useState(false);
+  const items = generatePacklist(plan);
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, marginTop: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', background: 'none', border: 'none', padding: '18px 24px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        cursor: 'pointer', textAlign: 'left',
+      }}>
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>🎒 Packliste für {plan.destination}</span>
+        <span style={{ fontSize: 20, color: '#94a3b8', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
+      </button>
+      {open && (
+        <div style={{ padding: '0 24px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+          {Object.entries(items).map(([cat, list]) => (
+            <div key={cat}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 8 }}>{cat}</div>
+              {list.map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid #cbd5e1', flexShrink: 0, display: 'inline-block' }} />
+                  <span style={{ fontSize: 13, color: '#334155' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function useIsMobile() {
   const [mobile, setMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
   useEffect(() => {
@@ -98,9 +235,16 @@ function DayCard({ day }) {
   );
 }
 
-export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
+export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegenerate, onRegenerateWithBudget }) {
   const isMobile = useIsMobile();
   const [toast, setToast] = useState('');
+  const [sidebarBudget, setSidebarBudget] = useState(plan?.budget || 1000);
+  const [rating, setRating] = useState(() => {
+    try {
+      const ratings = JSON.parse(localStorage.getItem('tripai_ratings') || '{}');
+      return ratings[plan?.destination] || 0;
+    } catch { return 0; }
+  });
   const [isFav, setIsFav] = useState(() => {
     try {
       const favs = JSON.parse(localStorage.getItem('tripai_favorites') || '[]');
@@ -119,8 +263,21 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
   };
 
   const handleShare = () => {
-    const text = `Ich habe meinen Reiseplan nach ${plan.destination} für ${plan.days?.length} Tage mit TripAI erstellt! ✈️ Kostenlos testen: https://tripai-omega.vercel.app`;
-    navigator.clipboard?.writeText(text).then(() => showToast('📋 In Zwischenablage kopiert!'));
+    const params = new URLSearchParams({ dest: plan.destination });
+    const url = `https://tripai-omega.vercel.app/?${params.toString()}`;
+    navigator.clipboard?.writeText(url).then(() => showToast('🔗 Link kopiert!'));
+  };
+
+  const handlePrint = () => window.print();
+
+  const handleRating = (stars) => {
+    setRating(stars);
+    try {
+      const ratings = JSON.parse(localStorage.getItem('tripai_ratings') || '{}');
+      ratings[plan.destination] = stars;
+      localStorage.setItem('tripai_ratings', JSON.stringify(ratings));
+    } catch {}
+    showToast(`${'⭐'.repeat(stars)} Danke für deine Bewertung!`);
   };
 
   const handleFavorite = () => {
@@ -179,6 +336,9 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
               </button>
               <button onClick={handleShare} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 🔗 Teilen
+              </button>
+              <button onClick={handlePrint} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+                📄 PDF
               </button>
               <div style={{ background: overBudget ? '#fff1f2' : '#f0fdf4', border: `1px solid ${overBudget ? '#fecaca' : '#86efac'}`, borderRadius: 50, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16 }}>{overBudget ? '⚠️' : '✅'}</span>
@@ -320,6 +480,25 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
                 )}
               </section>
             )}
+            {/* Packliste */}
+            <PackingList plan={plan} />
+
+            {/* Sterne-Bewertung */}
+            <div style={{ background: '#fff', borderRadius: 20, padding: 24, marginTop: 16, textAlign: 'center', boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>War dieser Plan hilfreich?</p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button key={star} onClick={() => handleRating(star)} style={{
+                    background: 'none', border: 'none', fontSize: 32, cursor: 'pointer',
+                    opacity: rating >= star ? 1 : 0.25,
+                    transform: rating >= star ? 'scale(1.15)' : 'scale(1)',
+                    transition: 'all 0.15s',
+                    padding: '2px 4px',
+                  }}>⭐</button>
+                ))}
+              </div>
+              {rating > 0 && <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 10 }}>Danke! Du hast {rating} von 5 Sternen gegeben.</p>}
+            </div>
           </div>
 
           {/* RIGHT SIDEBAR */}
@@ -355,20 +534,58 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
               ))}
             </div>
 
+            <WeatherAndMap destination={plan.destination} />
+
+            {/* Budget ändern & neu generieren */}
+            {onRegenerateWithBudget && (
+              <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 12 }}>💰 Budget anpassen</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>
+                  <span>300€</span>
+                  <span style={{ fontWeight: 700, color: '#2563eb', fontSize: 14 }}>{sidebarBudget.toLocaleString('de-DE')}€</span>
+                  <span>5.000€</span>
+                </div>
+                <input type="range" min={300} max={5000} step={100} value={sidebarBudget}
+                  onChange={e => setSidebarBudget(parseInt(e.target.value))}
+                  style={{ width: '100%', marginBottom: 12, accentColor: '#2563eb' }}
+                />
+                <button onClick={() => onRegenerateWithBudget(sidebarBudget)} style={{
+                  width: '100%', background: '#f0f9ff', color: '#0284c7', border: '1px solid #bae6fd',
+                  borderRadius: 12, padding: '10px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}>
+                  🔄 Mit {sidebarBudget.toLocaleString('de-DE')}€ neu generieren
+                </button>
+              </div>
+            )}
+
             <button onClick={onNewTrip} style={{
               width: '100%', background: 'linear-gradient(135deg,#2563eb,#0ea5e9)',
               color: '#fff', border: 'none', borderRadius: 16, padding: '14px 20px',
               fontSize: 15, fontWeight: 800, cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(37,99,235,0.3)',
+              boxShadow: '0 6px 20px rgba(37,99,235,0.3)', marginBottom: 10,
             }}>
               ✈️ Neue Reise planen
             </button>
+            {onRegenerate && (
+              <button onClick={onRegenerate} style={{
+                width: '100%', background: '#f8fafc', color: '#475569',
+                border: '1px solid #e2e8f0', borderRadius: 16, padding: '12px 20px',
+                fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              }}>
+                🎲 Gleiche Reise neu generieren
+              </button>
+            )}
           </div>
 
         </div>
       </div>
       <style>{`
         @keyframes slideIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @media print {
+          nav, .no-print { display: none !important; }
+          body { background: #fff !important; }
+          * { box-shadow: none !important; }
+        }
       `}</style>
     </div>
   );
