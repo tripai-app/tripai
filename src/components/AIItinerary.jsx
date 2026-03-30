@@ -144,7 +144,15 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
 
       {/* HEADER */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9', padding: '20px 24px' }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
+        <img
+          src={`https://source.unsplash.com/featured/1400x500?${encodeURIComponent(plan.destination + ' travel city')}`}
+          alt={plan.destination}
+          loading="lazy"
+          onError={e => e.target.style.display = 'none'}
+          style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }}
+        />
+        <div style={{ padding: '20px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
             <button onClick={onBack} style={{
@@ -187,6 +195,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome }) {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 

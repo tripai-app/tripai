@@ -270,7 +270,7 @@ function useIsMobile() {
 }
 
 /* ── Hero ──────────────────────────────────────────── */
-export default function Hero({ onStartPlanning, onPlanDestination }) {
+export default function Hero({ onStartPlanning, onPlanDestination, onSurpriseTrip, onLowBudgetTrip }) {
   const isMobile = useIsMobile();
 
   return (
@@ -304,14 +304,28 @@ export default function Hero({ onStartPlanning, onPlanDestination }) {
               Einfach Ziel eingeben. TripAI erstellt deinen kompletten Reiseplan — mit echten Hotels, Restaurants und Geheimtipps.
             </p>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'flex-start' }}>
               <button onClick={onStartPlanning} style={{ background: 'linear-gradient(135deg, #f59e0b, #f97316)', color: '#fff', border: 'none', borderRadius: 50, padding: '16px 38px', fontSize: 17, fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 32px rgba(245,158,11,0.38)', transition: 'all 0.25s' }}
                 onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 16px 44px rgba(245,158,11,0.52)'; }}
                 onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(245,158,11,0.38)'; }}
               >
                 ✈️ Reise planen — kostenlos
               </button>
-              <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 13 }}>Kein Account nötig</span>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button onClick={onSurpriseTrip} style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.4)', borderRadius: 50, padding: '10px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.28)'; e.currentTarget.style.borderColor = '#7c3aed'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.15)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.4)'; }}
+                >
+                  🎲 Überraschungsreise
+                </button>
+                <button onClick={onLowBudgetTrip} style={{ background: 'rgba(5,150,105,0.15)', color: '#34d399', border: '1px solid rgba(5,150,105,0.4)', borderRadius: 50, padding: '10px 22px', fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(5,150,105,0.28)'; e.currentTarget.style.borderColor = '#059669'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(5,150,105,0.15)'; e.currentTarget.style.borderColor = 'rgba(5,150,105,0.4)'; }}
+                >
+                  💸 Low Budget · ab 300€
+                </button>
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 12 }}>Kein Account nötig · Zufälliges Ziel, sofort generiert</span>
             </div>
           </div>
 

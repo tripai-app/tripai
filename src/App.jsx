@@ -28,6 +28,19 @@ class ErrorBoundary extends Component {
   }
 }
 
+const SURPRISE_DESTINATIONS = [
+  'Bali', 'Tokio', 'Bangkok', 'Kyoto', 'Singapur', 'New York', 'Miami',
+  'Lissabon', 'Porto', 'Barcelona', 'Amsterdam', 'Prag', 'Budapest', 'Wien',
+  'Santorini', 'Marrakesch', 'Kapstadt', 'Dubai', 'Malediven', 'Kopenhagen',
+  'Stockholm', 'Edinburgh', 'Florenz', 'Luzern', 'Reykjavik', 'Chiang Mai',
+  'Hanoi', 'Mexiko-Stadt', 'Buenos Aires', 'Havanna', 'Jordanien',
+];
+
+const BUDGET_DESTINATIONS = [
+  'Prag', 'Budapest', 'Krakau', 'Porto', 'Lissabon', 'Bangkok',
+  'Chiang Mai', 'Hanoi', 'Bali', 'Marrakesch', 'Belgrad', 'Tiflis',
+];
+
 export default function App() {
   const [page, setPage] = useState('home');
   const [defaultDestination, setDefaultDestination] = useState('');
@@ -42,6 +55,26 @@ export default function App() {
   const handlePlanDestination = (dest) => { setDefaultDestination(dest); navigate('planner'); };
   const handleBack = () => navigate('home');
   const handleNewTrip = () => { setDefaultDestination(''); setPlan(null); navigate('planner'); };
+
+  const handleSurpriseTrip = () => {
+    const dest = SURPRISE_DESTINATIONS[Math.floor(Math.random() * SURPRISE_DESTINATIONS.length)];
+    const days = Math.floor(Math.random() * 5) + 3;
+    const persons = Math.random() > 0.5 ? 1 : 2;
+    const budget = [600, 800, 1000, 1200, 1500][Math.floor(Math.random() * 5)];
+    const hotels = ['budget', 'mittel', 'komfort'];
+    const allInterests = ['kultur', 'natur', 'strand', 'essen', 'shopping', 'abenteuer', 'entspannung', 'nachtleben'];
+    const interests = [...allInterests].sort(() => Math.random() - 0.5).slice(0, 3);
+    handleGenerate({ destination: dest, days, persons, budget,
+      hotelCategory: hotels[Math.floor(Math.random() * 3)],
+      interests, includeTiktok: true, includeHiddenGems: true, wishes: '' });
+  };
+
+  const handleLowBudgetTrip = () => {
+    const dest = BUDGET_DESTINATIONS[Math.floor(Math.random() * BUDGET_DESTINATIONS.length)];
+    handleGenerate({ destination: dest, days: 4, persons: 2, budget: 300,
+      hotelCategory: 'budget', interests: ['essen', 'kultur', 'natur'],
+      includeTiktok: true, includeHiddenGems: true, wishes: '' });
+  };
 
   const handleGenerate = async (formData) => {
     setLoading(true);
@@ -85,7 +118,12 @@ export default function App() {
         <Navbar page={page} onNavigate={navigate} />
 
         {page === 'home' && (
-          <Hero onStartPlanning={handleStartPlanning} onPlanDestination={handlePlanDestination} />
+          <Hero
+            onStartPlanning={handleStartPlanning}
+            onPlanDestination={handlePlanDestination}
+            onSurpriseTrip={handleSurpriseTrip}
+            onLowBudgetTrip={handleLowBudgetTrip}
+          />
         )}
 
         {page === 'planner' && (
