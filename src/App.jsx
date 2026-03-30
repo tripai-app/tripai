@@ -132,7 +132,6 @@ export default function App() {
     const cached = readCache(cacheKey);
 
     if (cached) {
-      // Cache-Treffer: sofort anzeigen ohne API-Aufruf
       setPlan({ ...cached, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
       setLoading(false);
       navigate('itinerary');
@@ -146,21 +145,42 @@ export default function App() {
         body: JSON.stringify(formData),
       });
 
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error('Server-Fehler: ' + text.slice(0, 200));
+      if (!response.ok) {
+        const errText = await response.text();
+        let msg;
+        try { msg = JSON.parse(errText).error; } catch { msg = errText.slice(0, 200); }
+        throw new Error(msg || 'Fehler beim Generieren');
       }
 
-      if (!response.ok || data.error) {
-        throw new Error(data.error || 'Fehler beim Generieren');
-      }
+      // SSE-Stream lesen
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
 
-      writeCache(cacheKey, data.plan);
-      setPlan({ ...data.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
-      navigate('itinerary');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let event;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (event.type === 'done' && event.plan) {
+            writeCache(cacheKey, event.plan);
+            setPlan({ ...event.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
+            navigate('itinerary');
+            return;
+          } else if (event.type === 'error') {
+            throw new Error(event.message);
+          }
+          // type:'chunk' → Heartbeat, nichts tun
+        }
+      }
     } catch (err) {
       setError(err.message);
       navigate('planner');

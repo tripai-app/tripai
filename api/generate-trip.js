@@ -1,4 +1,4 @@
-// Vercel Edge Function — Claude AI Trip Generator (30s limit on Hobby plan)
+// Vercel Edge Function — Claude AI Trip Generator mit Streaming
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
@@ -44,7 +44,6 @@ export default async function handler(req) {
     nachtleben: 'Nachtleben & Bars',
   };
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
-
   const tiktokSection = includeTiktok ? `,"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Uhrzeit"}]` : '';
   const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
 
@@ -57,81 +56,104 @@ JSON-Schema (alle ${days} Tage pflichtmäßig, max 6 Wörter pro Textfeld):
 
 Alle ${days} Tage ausgeben. Echte Ortsnamen.`;
 
-  // Timeout vor Vercels 25s-Limit — gibt freundlichen Fehler statt FUNCTION_INVOCATION_TIMEOUT
-  const abort = new AbortController();
-  const timeoutId = setTimeout(() => abort.abort(), 24000);
-
-  // Mindestens 4000 Tokens, für lange Trips mehr (max 5500)
   const maxTokens = Math.max(4000, Math.min(1000 + days * 400, 5500));
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: abort.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+  // Anthropic mit stream:true aufrufen
+  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      stream: true,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const err = await response.text();
-      return new Response(JSON.stringify({ error: 'KI-Fehler: ' + err }), {
-        status: 500, headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const data = await response.json();
-    const text = data.content[0].text.trim();
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return new Response(JSON.stringify({ error: 'Ungültige KI-Antwort' }), {
-        status: 500, headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    let plan;
-    try {
-      plan = JSON.parse(jsonMatch[0]);
-    } catch {
-      // JSON abgeschnitten — versuche bis zur letzten gültigen Stelle zu parsen
-      let jsonStr = jsonMatch[0];
-      while (jsonStr.length > 10) {
-        try {
-          plan = JSON.parse(jsonStr + ']}]}');
-          break;
-        } catch {
-          jsonStr = jsonStr.slice(0, jsonStr.lastIndexOf(','));
-        }
-      }
-      if (!plan) {
-        return new Response(JSON.stringify({ error: 'KI-Antwort konnte nicht verarbeitet werden. Bitte nochmal versuchen.' }), {
-          status: 500, headers: { 'Content-Type': 'application/json' },
-        });
-      }
-    }
-    return new Response(JSON.stringify({ plan }), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    });
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    const isTimeout = err.name === 'AbortError';
-    return new Response(JSON.stringify({
-      error: isTimeout
-        ? `Plan dauert zu lange (${days} Tage ist viel). Versuche es mit weniger Tagen oder klicke nochmal auf Generieren.`
-        : 'Serverfehler: ' + err.message,
-    }), {
+  if (!anthropicRes.ok) {
+    const err = await anthropicRes.text();
+    return new Response(JSON.stringify({ error: 'KI-Fehler: ' + err }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  // SSE-Stream an Client weiterleiten — Vercel-Timeout wird durch ersten Byte zurückgesetzt
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (obj) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+
+      let fullText = '';
+      const reader = anthropicRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (!raw || raw === '[DONE]') continue;
+
+            let event;
+            try { event = JSON.parse(raw); } catch { continue; }
+
+            if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+              fullText += event.delta.text;
+              // Heartbeat damit Vercel die Verbindung offen hält
+              send({ type: 'chunk' });
+            } else if (event.type === 'message_stop') {
+              // JSON aus dem gesammelten Text extrahieren
+              const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+              if (!jsonMatch) { send({ type: 'error', message: 'Ungültige KI-Antwort' }); break; }
+
+              let plan;
+              try {
+                plan = JSON.parse(jsonMatch[0]);
+              } catch {
+                let jsonStr = jsonMatch[0];
+                while (jsonStr.length > 10) {
+                  try { plan = JSON.parse(jsonStr + ']}]}'); break; }
+                  catch { jsonStr = jsonStr.slice(0, jsonStr.lastIndexOf(',')); }
+                }
+              }
+
+              if (plan) {
+                send({ type: 'done', plan });
+              } else {
+                send({ type: 'error', message: 'Antwort konnte nicht verarbeitet werden. Bitte nochmal versuchen.' });
+              }
+            } else if (event.type === 'error') {
+              send({ type: 'error', message: event.error?.message || 'KI-Fehler' });
+            }
+          }
+        }
+      } catch (err) {
+        send({ type: 'error', message: 'Verbindungsfehler: ' + err.message });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    },
+  });
 }
