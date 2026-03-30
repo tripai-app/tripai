@@ -18,11 +18,12 @@ const hotelOptions = [
   { id: 'luxus', label: 'Luxus', sub: 'ab 250€/Nacht', icon: '👑' },
 ];
 
-export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error }) {
+export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error, onBack }) {
   const [form, setForm] = useState({
     destination: defaultDestination || '',
     days: 5,
     persons: 2,
+    travelDate: '',
     budget: 1500,
     hotelCategory: 'mittel',
     interests: ['kultur', 'essen'],
@@ -66,14 +67,23 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 20px 60px' }}>
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ fontSize: 44, marginBottom: 10, animation: 'float 3s ease-in-out infinite' }}>🌍</div>
-          <h1 style={{ fontSize: 30, fontWeight: 900, color: '#0f172a', letterSpacing: '-1px', marginBottom: 6 }}>
-            Wohin soll es gehen?
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: 15 }}>
-            KI plant deinen Traumurlaub — jeden Ort der Welt
-          </p>
+        <div style={{ marginBottom: 36 }}>
+          <button type="button" onClick={onBack} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#94a3b8', fontSize: 13, fontWeight: 600,
+            padding: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            ← Zurück zur Startseite
+          </button>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 44, marginBottom: 10, animation: 'float 3s ease-in-out infinite' }}>🌍</div>
+            <h1 style={{ fontSize: 30, fontWeight: 900, color: '#0f172a', letterSpacing: '-1px', marginBottom: 6 }}>
+              Wohin soll es gehen?
+            </h1>
+            <p style={{ color: '#94a3b8', fontSize: 15 }}>
+              KI plant deinen Traumurlaub — jeden Ort der Welt
+            </p>
+          </div>
         </div>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -159,6 +169,41 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Travel Date */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>
+              REISEDATUM <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 20 }}>📅</span>
+              <input
+                type="date"
+                value={form.travelDate}
+                onChange={e => setForm(f => ({ ...f, travelDate: e.target.value }))}
+                min={new Date().toISOString().split('T')[0]}
+                style={{
+                  flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 12,
+                  padding: '10px 14px', fontSize: 15, color: form.travelDate ? '#0f172a' : '#94a3b8',
+                  outline: 'none', background: '#f8fafc', fontFamily: 'inherit',
+                  cursor: 'pointer', transition: 'border-color 0.2s',
+                }}
+                onFocus={e => e.target.style.borderColor = '#2563eb'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+              />
+              {form.travelDate && (
+                <button type="button" onClick={() => setForm(f => ({ ...f, travelDate: '' }))} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#94a3b8', fontSize: 18, padding: 4,
+                }}>✕</button>
+              )}
+            </div>
+            {form.travelDate && (
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, marginLeft: 32 }}>
+                📍 KI berücksichtigt Saison, Wetter & Öffnungszeiten für dieses Datum
+              </div>
+            )}
           </div>
 
           {/* Budget */}

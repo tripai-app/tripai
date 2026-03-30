@@ -156,6 +156,7 @@ export default function App() {
             onGenerate={handleGenerate}
             isLoading={loading}
             error={error}
+            onBack={() => navigate('home')}
           />
         )}
 
