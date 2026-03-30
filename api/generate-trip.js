@@ -57,9 +57,17 @@ Antworte mit genau diesem JSON (alle ${days} Tage, je 3 Slots, kurze Texte max 8
 
 WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
 
+  // Timeout vor Verlacels 25s-Limit — gibt freundlichen Fehler statt FUNCTION_INVOCATION_TIMEOUT
+  const abort = new AbortController();
+  const timeoutId = setTimeout(() => abort.abort(), 22000);
+
+  // Mehr Tage = mehr Tokens nötig
+  const maxTokens = Math.min(500 + days * 450, 4500);
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: abort.signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -67,10 +75,12 @@ WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const err = await response.text();
@@ -114,7 +124,13 @@ WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Serverfehler: ' + err.message }), {
+    clearTimeout(timeoutId);
+    const isTimeout = err.name === 'AbortError';
+    return new Response(JSON.stringify({
+      error: isTimeout
+        ? `Plan dauert zu lange (${days} Tage ist viel). Versuche es mit weniger Tagen oder klicke nochmal auf Generieren.`
+        : 'Serverfehler: ' + err.message,
+    }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
