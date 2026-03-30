@@ -342,6 +342,11 @@ function Slot({ slot, isLast }) {
           <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', flexShrink: 0 }}>~{slot.cost}€</span>
         </div>
         <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.55, marginBottom: 6 }}>{slot.description}</div>
+        {slot.area && (
+          <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+            📍 {slot.area}
+          </div>
+        )}
         {slot.openingHours && (
           <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 5 }}>
             🕐 {slot.openingHours}{slot.duration && ` · ⏱ ${slot.duration}`}
