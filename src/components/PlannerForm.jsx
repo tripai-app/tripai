@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 const interests = [
   { id: 'kultur', label: '🏛️ Kultur' },
@@ -21,6 +21,7 @@ const hotelOptions = [
 export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error, onBack }) {
   const [form, setForm] = useState({
     destination: defaultDestination || '',
+    departureCity: '',
     days: 5,
     persons: 2,
     travelDate: '',
@@ -48,19 +49,6 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
   };
 
   const budgetPerPerson = Math.round(form.budget / form.persons);
-  const sliderRef = useRef(null);
-
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    const update = (e) => setForm(f => ({ ...f, budget: parseInt(e.target.value) }));
-    slider.addEventListener('input', update);
-    slider.addEventListener('change', update);
-    return () => {
-      slider.removeEventListener('input', update);
-      slider.removeEventListener('change', update);
-    };
-  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: '#eef2ff' }}>
@@ -127,6 +115,31 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 ? <><span style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }}>⟳</span> Planen…</>
                 : <>Plan erstellen ✨</>}
             </button>
+          </div>
+
+          {/* Departure City */}
+          <div style={{
+            background: '#fff', borderRadius: 20,
+            padding: '6px 8px 6px 20px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+            display: 'flex', alignItems: 'center', gap: 12,
+            border: '2px solid transparent', transition: 'border-color 0.2s',
+          }}
+            onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
+            onBlurCapture={e => e.currentTarget.style.borderColor = 'transparent'}
+          >
+            <span style={{ fontSize: 20 }}>🛫</span>
+            <input
+              type="text"
+              value={form.departureCity}
+              onChange={e => setForm(f => ({ ...f, departureCity: e.target.value }))}
+              placeholder="Abflugstadt (optional) — z.B. München, Berlin…"
+              style={{
+                flex: 1, border: 'none', outline: 'none',
+                fontSize: 15, fontWeight: 500, color: '#0f172a',
+                background: 'transparent', padding: '14px 0',
+              }}
+            />
           </div>
 
           {isLoading && (
@@ -215,9 +228,10 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>≈ {budgetPerPerson}€/Person</span>
               </div>
             </div>
-            <input ref={sliderRef} type="range" min="300" max="10000" step="100"
+            <input type="range" min="300" max="10000" step="100"
               value={form.budget}
               onChange={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
+              onInput={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
               style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
@@ -322,6 +336,21 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
               })}
             </div>
           </div>
+
+          {/* Bottom submit */}
+          <button type="submit" disabled={isLoading || !form.destination.trim()} style={{
+            background: isLoading ? '#93c5fd' : 'linear-gradient(135deg,#2563eb,#0ea5e9)',
+            color: '#fff', border: 'none', borderRadius: 16,
+            padding: '18px', fontWeight: 800, fontSize: 17,
+            cursor: isLoading ? 'wait' : 'pointer',
+            boxShadow: isLoading ? 'none' : '0 6px 20px rgba(37,99,235,0.4)',
+            transition: 'all 0.2s', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: 10,
+          }}>
+            {isLoading
+              ? <><span style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }}>⟳</span> Plan wird erstellt…</>
+              : <>✨ Reiseplan erstellen →</>}
+          </button>
 
         </form>
       </div>

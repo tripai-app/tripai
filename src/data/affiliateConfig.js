@@ -27,6 +27,10 @@ export const AFFILIATE = {
     affiliateId: 'DEINE_RC_ID',    // Ersetzen nach Anmeldung
     active: false,
   },
+  amazon: {
+    tag: 'DEINE_AMAZON_TAG',       // Ersetzen nach Anmeldung: affiliate.amazon.de
+    active: false,
+  },
 };
 
 // Generiert Affiliate-Links mit Ziel & Personen
@@ -57,6 +61,12 @@ export function getSkyscannerLink(persons) {
     ...(AFFILIATE.skyscanner.active && { associateid: AFFILIATE.skyscanner.associateId }),
   });
   return `${base}?${params.toString()}`;
+}
+
+export function getAmazonLink(searchTerm) {
+  const params = new URLSearchParams({ k: searchTerm });
+  if (AFFILIATE.amazon.active) params.set('tag', AFFILIATE.amazon.tag);
+  return `https://www.amazon.de/s?${params.toString()}`;
 }
 
 export function getRentalcarsLink(destination) {

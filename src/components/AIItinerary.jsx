@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AffiliateSection from './AffiliateSection';
+import { getAmazonLink } from '../data/affiliateConfig';
 
 function generatePacklist(plan) {
   const dest = (plan.destination || '').toLowerCase();
@@ -120,14 +121,19 @@ function PackingList({ plan }) {
         <span style={{ fontSize: 20, color: '#94a3b8', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
       </button>
       {open && (
-        <div style={{ padding: '0 24px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+        <div style={{ padding: '0 24px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
           {Object.entries(items).map(([cat, list]) => (
             <div key={cat}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 8 }}>{cat}</div>
               {list.map(item => (
                 <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid #cbd5e1', flexShrink: 0, display: 'inline-block' }} />
-                  <span style={{ fontSize: 13, color: '#334155' }}>{item}</span>
+                  <a href={getAmazonLink(item)} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 13, color: '#334155', textDecoration: 'none', flex: 1 }}
+                    title="Bei Amazon suchen">
+                    {item}
+                    <span style={{ fontSize: 10, color: '#f97316', marginLeft: 6, fontWeight: 700 }}>Amazon →</span>
+                  </a>
                 </div>
               ))}
             </div>

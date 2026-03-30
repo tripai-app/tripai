@@ -20,6 +20,7 @@ function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
     const updated = favs.filter(f => f.destination !== destination);
     localStorage.setItem('tripai_favorites', JSON.stringify(updated));
     setFavs(updated);
+    window.dispatchEvent(new Event('favoritesUpdated'));
   };
 
   return (
