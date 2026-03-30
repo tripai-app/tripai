@@ -52,10 +52,10 @@ export default async function handler(req) {
 
 Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}
 
-Antworte mit genau diesem JSON (alle ${days} Tage, je 3 Slots, kurze Texte max 8 Wörter):
-{"destination":"${destination}","emoji":"🏝️","heroImage":"Kurz","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Airline","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Früh buchen"}],"days":[{"dayNumber":1,"title":"Ankunft","theme":"✈️ Start","slots":[{"time":"10:00","type":"sehenswuerdigkeit","name":"Ort","description":"Kurz","area":"Viertel","duration":"2h","cost":10,"openingHours":"9-18","tips":"Tipp","tiktokWorthy":${includeTiktok}},{"time":"13:00","type":"restaurant","name":"Restaurant","description":"Lokal","area":"Bezirk","duration":"1h","cost":20,"cuisine":"Küche","mustTry":"Gericht","tiktokWorthy":false},{"time":"19:00","type":"restaurant","name":"Abendessen","description":"Abend","area":"Stadtteil","duration":"1.5h","cost":25,"cuisine":"Lokal","mustTry":"Spezialität","tiktokWorthy":false}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Spartipp"}
+JSON-Schema (alle ${days} Tage pflichtmäßig, max 6 Wörter pro Textfeld):
+{"destination":"${destination}","emoji":"🏝️","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Air","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Tipp"}],"days":[{"dayNumber":1,"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"openingHours":"9-18","tips":"Tipp","tiktokWorthy":${includeTiktok}},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht","tiktokWorthy":false},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht","tiktokWorthy":false}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
 
-WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
+Alle ${days} Tage ausgeben. Echte Ortsnamen.`;
 
   // Timeout vor Vercels 25s-Limit — gibt freundlichen Fehler statt FUNCTION_INVOCATION_TIMEOUT
   const abort = new AbortController();
@@ -74,7 +74,7 @@ WICHTIG: Alle ${days} Tage erstellen. Echte Namen verwenden.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-3-haiku-20240307',
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
