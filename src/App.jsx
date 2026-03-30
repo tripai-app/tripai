@@ -125,7 +125,7 @@ export default function App() {
         throw new Error(data.error || 'Fehler beim Generieren');
       }
 
-      setPlan({ ...data.plan, budget: formData.budget, persons: formData.persons });
+      setPlan({ ...data.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
       navigate('itinerary');
     } catch (err) {
       setError(err.message);

@@ -39,6 +39,159 @@ function generatePacklist(plan) {
   return items;
 }
 
+const CURRENCY_MAP = {
+  'thailand': { code: 'THB', symbol: '฿', name: 'Thail. Baht' },
+  'bangkok': { code: 'THB', symbol: '฿', name: 'Thail. Baht' },
+  'chiang mai': { code: 'THB', symbol: '฿', name: 'Thail. Baht' },
+  'bali': { code: 'IDR', symbol: 'Rp', name: 'Indonesische Rupiah' },
+  'tokio': { code: 'JPY', symbol: '¥', name: 'Japanischer Yen' },
+  'kyoto': { code: 'JPY', symbol: '¥', name: 'Japanischer Yen' },
+  'japan': { code: 'JPY', symbol: '¥', name: 'Japanischer Yen' },
+  'singapur': { code: 'SGD', symbol: 'S$', name: 'Singapur-Dollar' },
+  'hanoi': { code: 'VND', symbol: '₫', name: 'Vietn. Dong' },
+  'vietnam': { code: 'VND', symbol: '₫', name: 'Vietn. Dong' },
+  'new york': { code: 'USD', symbol: '$', name: 'US-Dollar' },
+  'miami': { code: 'USD', symbol: '$', name: 'US-Dollar' },
+  'los angeles': { code: 'USD', symbol: '$', name: 'US-Dollar' },
+  'usa': { code: 'USD', symbol: '$', name: 'US-Dollar' },
+  'mexiko': { code: 'MXN', symbol: 'MX$', name: 'Mexikan. Peso' },
+  'havanna': { code: 'CUP', symbol: '$', name: 'Kuba-Peso' },
+  'buenos aires': { code: 'ARS', symbol: '$', name: 'Argent. Peso' },
+  'dubai': { code: 'AED', symbol: 'د.إ', name: 'Emiratischer Dirham' },
+  'marrakesch': { code: 'MAD', symbol: 'MAD', name: 'Marokkan. Dirham' },
+  'kapstadt': { code: 'ZAR', symbol: 'R', name: 'Südafr. Rand' },
+  'malediven': { code: 'MVR', symbol: 'Rf', name: 'Malediv. Rufiyaa' },
+  'london': { code: 'GBP', symbol: '£', name: 'Britisches Pfund' },
+  'edinburgh': { code: 'GBP', symbol: '£', name: 'Britisches Pfund' },
+  'jordanien': { code: 'JOD', symbol: 'JD', name: 'Jordan. Dinar' },
+};
+
+function CurrencyConverter({ destination }) {
+  const [rate, setRate] = useState(null);
+  const [amount, setAmount] = useState(100);
+  const [currency, setCurrency] = useState(null);
+
+  useEffect(() => {
+    const dest = destination.toLowerCase();
+    const found = Object.entries(CURRENCY_MAP).find(([key]) => dest.includes(key));
+    if (!found) return;
+    const cur = found[1];
+    setCurrency(cur);
+    fetch(`https://api.frankfurter.app/latest?from=EUR&to=${cur.code}`)
+      .then(r => r.json())
+      .then(data => { if (data.rates?.[cur.code]) setRate(data.rates[cur.code]); })
+      .catch(() => {});
+  }, [destination]);
+
+  if (!currency || !rate) return null;
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 14 }}>💱 Währungsrechner</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <input
+          type="number"
+          value={amount}
+          min={1}
+          onChange={e => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
+          style={{ width: 80, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '8px 10px', fontSize: 16, fontWeight: 700, color: '#0f172a', outline: 'none', background: '#f8fafc' }}
+        />
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#475569' }}>€ Euro =</span>
+      </div>
+      <div style={{ background: 'linear-gradient(135deg,#eff6ff,#e0f2fe)', borderRadius: 14, padding: '14px 18px' }}>
+        <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a' }}>
+          {(amount * rate).toLocaleString('de-DE', { maximumFractionDigits: 0 })} {currency.symbol}
+        </div>
+        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>{currency.name} · 1€ ≈ {rate.toLocaleString('de-DE', { maximumFractionDigits: 2 })} {currency.symbol}</div>
+      </div>
+    </div>
+  );
+}
+
+function TravelChecklist({ destination }) {
+  const [open, setOpen] = useState(false);
+  const dest = destination.toLowerCase();
+
+  const items = [];
+
+  // Visum
+  if (/usa|new york|miami|los angeles|las vegas|chicago|san francisco/.test(dest))
+    items.push({ cat: '🛂 Einreise', text: 'ESTA benötigt (~21€) — mind. 72h vor Abflug online beantragen', urgent: true });
+  else if (/kanada/.test(dest))
+    items.push({ cat: '🛂 Einreise', text: 'eTA benötigt (~7 CAD) — online vor dem Flug', urgent: true });
+  else if (/australien/.test(dest))
+    items.push({ cat: '🛂 Einreise', text: 'ETA oder eVisitor Visum benötigt (kostenlos)', urgent: true });
+  else if (/indien/.test(dest))
+    items.push({ cat: '🛂 Einreise', text: 'e-Visum benötigt (~25€) — mind. 4 Tage vor Einreise', urgent: true });
+  else if (/vietnam/.test(dest))
+    items.push({ cat: '🛂 Einreise', text: 'Visum on Arrival möglich oder e-Visum (~25$)', urgent: true });
+  else
+    items.push({ cat: '🛂 Einreise', text: 'Kein Visum nötig (EU-Bürger, max. 90 Tage)', urgent: false });
+
+  // Impfungen
+  if (/thailand|bali|vietnam|kambodscha|indien|nepal|marrakesch|peru|brasilien|mexiko|havanna|kapstadt/.test(dest))
+    items.push({ cat: '💉 Impfungen', text: 'Hepatitis A + Typhus empfohlen — Arzt 4–6 Wochen vor Reise aufsuchen', urgent: true });
+  else
+    items.push({ cat: '💉 Impfungen', text: 'Standardimpfungen ausreichend (Tetanus, Masern aktuell?)', urgent: false });
+
+  // Stecker
+  if (/usa|new york|miami|kanada|mexiko|japan|tokio|kyoto/.test(dest))
+    items.push({ cat: '🔌 Stecker', text: 'Typ A/B (US-Flachstecker) — Reiseadapter mitbringen', urgent: false });
+  else if (/london|edinburgh|uk|irland|singapur|hongkong|dubai|malediven/.test(dest))
+    items.push({ cat: '🔌 Stecker', text: 'Typ G (3 eckige Pins, UK) — Adapter nötig', urgent: false });
+  else if (/australien|neuseeland/.test(dest))
+    items.push({ cat: '🔌 Stecker', text: 'Typ I (australischer Stecker) — Adapter nötig', urgent: false });
+  else
+    items.push({ cat: '🔌 Stecker', text: 'Kein Adapter nötig (Typ C/E/F wie in Deutschland)', urgent: false });
+
+  // Krankenversicherung
+  if (/usa|kanada|australien|japan/.test(dest))
+    items.push({ cat: '🏥 Krankenversicherung', text: 'Private Auslandskrankenversicherung dringend empfohlen — Behandlung sehr teuer!', urgent: true });
+  else if (/thailand|bali|vietnam|indien|marrakesch/.test(dest))
+    items.push({ cat: '🏥 Krankenversicherung', text: 'Auslandskrankenversicherung empfohlen (~5–10€/Woche)', urgent: false });
+  else
+    items.push({ cat: '🏥 Krankenversicherung', text: 'EHIC-Karte (europ. Krankenversichertenkarte) gilt in EU-Ländern', urgent: false });
+
+  // Währung
+  const hasCash = /japan|tokio|marrakesch|vietnam|indien|bali/.test(dest);
+  if (hasCash)
+    items.push({ cat: '💵 Bargeld', text: 'Lokale Währung empfohlen — Kreditkarte nicht überall akzeptiert', urgent: false });
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, marginTop: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', background: 'none', border: 'none', padding: '18px 24px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        cursor: 'pointer', textAlign: 'left',
+      }}>
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>✅ Einreise-Checkliste für {destination}</span>
+        <span style={{ fontSize: 20, color: '#94a3b8', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
+      </button>
+      {open && (
+        <div style={{ padding: '0 24px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {items.map((item, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+              background: item.urgent ? '#fff7ed' : '#f8fafc',
+              border: `1px solid ${item.urgent ? '#fed7aa' : '#e2e8f0'}`,
+              borderRadius: 12, padding: '12px 14px',
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{item.urgent ? '⚠️' : '✓'}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: item.urgent ? '#c2410c' : '#475569', marginBottom: 2 }}>{item.cat}</div>
+                <div style={{ fontSize: 13, color: item.urgent ? '#7c2d12' : '#334155' }}>{item.text}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+            ℹ️ Angaben ohne Gewähr — bitte offizielle Quellen prüfen.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const WEATHER_ICONS = { 0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌧️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',85:'❄️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️' };
 
 function WeatherAndMap({ destination }) {
@@ -332,7 +485,10 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <div>
                 <h1 style={{ fontSize: 28, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.5px', margin: 0 }}>{plan.destination}</h1>
                 <p style={{ color: '#94a3b8', marginTop: 4, fontSize: 14 }}>
-                  {plan.days?.length} Tage · {plan.persons} {plan.persons === 1 ? 'Person' : 'Personen'} · ✨ KI-Reiseplan
+                  {plan.days?.length} Tage · {plan.persons} {plan.persons === 1 ? 'Person' : 'Personen'}
+                  {plan.departureCity && <> · 🛫 ab {plan.departureCity}</>}
+                  {plan.travelDate && <> · 📅 {new Date(plan.travelDate + 'T12:00:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</>}
+                  {' '}· ✨ KI-Reiseplan
                 </p>
               </div>
             </div>
@@ -374,7 +530,14 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             {/* Flights */}
             {plan.flights?.length > 0 && (
               <section style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 2px 16px rgba(0,0,0,0.05)', marginBottom: 16 }}>
-                <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 14 }}>✈️ Flugoptionen</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 14 }}>
+                  ✈️ Flugoptionen
+                  {plan.departureCity && (
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8', marginLeft: 10 }}>
+                      {plan.departureCity} → {plan.destination}
+                    </span>
+                  )}
+                </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {plan.flights.map((f, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: 14, padding: '14px 18px' }}>
@@ -488,6 +651,8 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             )}
             {/* Packliste */}
             <PackingList plan={plan} />
+            {/* Einreise-Checkliste */}
+            <TravelChecklist destination={plan.destination} />
 
             {/* Sterne-Bewertung */}
             <div style={{ background: '#fff', borderRadius: 20, padding: 24, marginTop: 16, textAlign: 'center', boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
@@ -541,6 +706,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             </div>
 
             <WeatherAndMap destination={plan.destination} />
+            <CurrencyConverter destination={plan.destination} />
 
             {/* Budget ändern & neu generieren */}
             {onRegenerateWithBudget && (
