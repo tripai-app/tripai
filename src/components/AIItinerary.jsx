@@ -194,9 +194,10 @@ function TravelChecklist({ destination }) {
 
 const WEATHER_ICONS = { 0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌧️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',85:'❄️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️' };
 
-function WeatherAndMap({ destination }) {
+function WeatherAndMap({ destination, travelDate }) {
   const [geo, setGeo] = useState(null);
   const [weather, setWeather] = useState(null);
+  const [weatherLabel, setWeatherLabel] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -207,14 +208,51 @@ function WeatherAndMap({ destination }) {
         const loc = gData.results?.[0];
         if (!loc || cancelled) return;
         setGeo(loc);
-        const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=5`);
-        const wData = await wRes.json();
-        if (!cancelled) setWeather(wData.daily);
+
+        const baseUrl = `latitude=${loc.latitude}&longitude=${loc.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+        let wData;
+
+        if (travelDate) {
+          const today = new Date();
+          const travel = new Date(travelDate + 'T12:00:00');
+          const daysUntil = Math.round((travel - today) / 86400000);
+
+          if (daysUntil > 0 && daysUntil <= 14) {
+            // Echte Vorhersage: 14-Tage-Forecast, Tage rund ums Reisedatum ausschneiden
+            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=16`);
+            const raw = await wRes.json();
+            const idx = raw.daily.time?.indexOf(travelDate) ?? daysUntil;
+            const start = Math.max(0, idx - 1);
+            const slice = (arr) => arr?.slice(start, start + 5) ?? [];
+            wData = { time: slice(raw.daily.time), temperature_2m_max: slice(raw.daily.temperature_2m_max), temperature_2m_min: slice(raw.daily.temperature_2m_min), weathercode: slice(raw.daily.weathercode) };
+            setWeatherLabel(`Vorhersage für deine Reise`);
+          } else if (daysUntil > 14) {
+            // Historisches Klima: gleiches Datum letztes Jahr aus Archiv-API
+            const lastYear = new Date(travel);
+            lastYear.setFullYear(lastYear.getFullYear() - 1);
+            const fmt = (d) => d.toISOString().split('T')[0];
+            const startD = fmt(lastYear);
+            const endD = fmt(new Date(lastYear.getTime() + 4 * 86400000));
+            const wRes = await fetch(`https://archive-api.open-meteo.com/v1/archive?${baseUrl}&start_date=${startD}&end_date=${endD}`);
+            wData = (await wRes.json()).daily;
+            const monthName = travel.toLocaleDateString('de-DE', { month: 'long' });
+            setWeatherLabel(`Typisches Klima im ${monthName}`);
+          }
+        }
+
+        if (!wData) {
+          // Standard: nächste 5 Tage
+          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=5`);
+          wData = (await wRes.json()).daily;
+          setWeatherLabel('Wetter diese Woche');
+        }
+
+        if (!cancelled) setWeather(wData);
       } catch {}
     }
     load();
     return () => { cancelled = true; };
-  }, [destination]);
+  }, [destination, travelDate]);
 
   if (!geo) return null;
 
@@ -225,7 +263,10 @@ function WeatherAndMap({ destination }) {
       {/* Wetter */}
       {weather && (
         <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>🌤️ Wetter in {destination}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>🌤️ Wetter in {destination}</div>
+            {weatherLabel && <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{weatherLabel}</div>}
+          </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
             {weather.time?.slice(0, 5).map((date, i) => {
               const d = new Date(date);
@@ -362,6 +403,14 @@ function Slot({ slot, isLast }) {
             💡 {slot.tips}
           </div>
         )}
+        <a
+          href={`https://www.google.com/maps/search/${encodeURIComponent(slot.name)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 11, color: '#94a3b8', marginTop: 7, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+        >
+          🗺️ Google Maps
+        </a>
       </div>
     </div>
   );
@@ -697,20 +746,26 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                 ['🏨 Hotel', plan.costs?.hotel, '#8b5cf6'],
                 ['🍽️ Essen', plan.costs?.essen, '#f59e0b'],
                 ['🎯 Aktivitäten', plan.costs?.aktivitaeten, '#10b981'],
-              ].filter(([, amt]) => amt > 0).map(([label, amount, color]) => (
-                <div key={label} style={{ marginBottom: 13 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, fontSize: 13 }}>
-                    <span style={{ fontWeight: 600, color: '#475569' }}>{label}</span>
-                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{amount?.toLocaleString('de-DE')}€</span>
+              ].filter(([, amt]) => amt > 0).map(([label, amount, color]) => {
+                const pct = Math.round((amount / (plan.costs?.gesamt || 1)) * 100);
+                return (
+                  <div key={label} style={{ marginBottom: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
+                      <span style={{ fontWeight: 600, color: '#475569' }}>{label}</span>
+                      <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                        {amount?.toLocaleString('de-DE')}€
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 5 }}>{pct}%</span>
+                      </span>
+                    </div>
+                    <div style={{ height: 10, background: '#f1f5f9', borderRadius: 99 }}>
+                      <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: color, borderRadius: 99, transition: 'width 0.6s ease' }} />
+                    </div>
                   </div>
-                  <div style={{ height: 5, background: '#f1f5f9', borderRadius: 99 }}>
-                    <div style={{ height: '100%', width: `${Math.min((amount / (plan.costs?.gesamt || 1)) * 100, 100)}%`, background: color, borderRadius: 99 }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <WeatherAndMap destination={plan.destination} />
+            <WeatherAndMap destination={plan.destination} travelDate={plan.travelDate} />
             <CurrencyConverter destination={plan.destination} />
 
             {/* Budget ändern & neu generieren */}
