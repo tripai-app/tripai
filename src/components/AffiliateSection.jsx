@@ -34,7 +34,7 @@ const partners = (destination, persons, days) => [
     color: '#0770e3',
     bg: '#e8f1fd',
     cta: 'Flüge vergleichen',
-    link: getSkyscannerLink(persons),
+    link: getSkyscannerLink(destination, persons),
     badge: null,
   },
   {

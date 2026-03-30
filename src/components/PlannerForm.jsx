@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import useIsMobile from '../hooks/useIsMobile';
 
 const interests = [
   { id: 'kultur', label: '🏛️ Kultur' },
@@ -19,6 +20,7 @@ const hotelOptions = [
 ];
 
 export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error, onBack }) {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({
     destination: defaultDestination || '',
     departureCity: '',
@@ -243,7 +245,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
           {/* Hotel */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>UNTERKUNFT</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 8 }}>
               {hotelOptions.map(opt => {
                 const sel = form.hotelCategory === opt.id;
                 return (

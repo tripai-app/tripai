@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AffiliateSection from './AffiliateSection';
 import { getAmazonLink } from '../data/affiliateConfig';
+import useIsMobile from '../hooks/useIsMobile';
 
 function generatePacklist(plan) {
   const dest = (plan.destination || '').toLowerCase();
@@ -198,15 +199,22 @@ function WeatherAndMap({ destination, travelDate }) {
   const [geo, setGeo] = useState(null);
   const [weather, setWeather] = useState(null);
   const [weatherLabel, setWeatherLabel] = useState('');
+  const abortRef = useRef(null);
 
   useEffect(() => {
-    let cancelled = false;
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
+
     async function load() {
       try {
-        const gRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(destination)}&count=1&language=de`);
+        const gRes = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(destination)}&count=1&language=de`,
+          { signal }
+        );
         const gData = await gRes.json();
         const loc = gData.results?.[0];
-        if (!loc || cancelled) return;
+        if (!loc) return;
         setGeo(loc);
 
         const baseUrl = `latitude=${loc.latitude}&longitude=${loc.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
@@ -218,40 +226,39 @@ function WeatherAndMap({ destination, travelDate }) {
           const daysUntil = Math.round((travel - today) / 86400000);
 
           if (daysUntil > 0 && daysUntil <= 14) {
-            // Echte Vorhersage: 14-Tage-Forecast, Tage rund ums Reisedatum ausschneiden
-            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=16`);
+            const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=16`, { signal });
             const raw = await wRes.json();
             const idx = raw.daily.time?.indexOf(travelDate) ?? daysUntil;
             const start = Math.max(0, idx - 1);
             const slice = (arr) => arr?.slice(start, start + 5) ?? [];
             wData = { time: slice(raw.daily.time), temperature_2m_max: slice(raw.daily.temperature_2m_max), temperature_2m_min: slice(raw.daily.temperature_2m_min), weathercode: slice(raw.daily.weathercode) };
-            setWeatherLabel(`Vorhersage für deine Reise`);
+            setWeatherLabel('Vorhersage für deine Reise');
           } else if (daysUntil > 14) {
-            // Historisches Klima: gleiches Datum letztes Jahr aus Archiv-API
             const lastYear = new Date(travel);
             lastYear.setFullYear(lastYear.getFullYear() - 1);
             const fmt = (d) => d.toISOString().split('T')[0];
-            const startD = fmt(lastYear);
-            const endD = fmt(new Date(lastYear.getTime() + 4 * 86400000));
-            const wRes = await fetch(`https://archive-api.open-meteo.com/v1/archive?${baseUrl}&start_date=${startD}&end_date=${endD}`);
+            const wRes = await fetch(
+              `https://archive-api.open-meteo.com/v1/archive?${baseUrl}&start_date=${fmt(lastYear)}&end_date=${fmt(new Date(lastYear.getTime() + 4 * 86400000))}`,
+              { signal }
+            );
             wData = (await wRes.json()).daily;
-            const monthName = travel.toLocaleDateString('de-DE', { month: 'long' });
-            setWeatherLabel(`Typisches Klima im ${monthName}`);
+            setWeatherLabel(`Typisches Klima im ${travel.toLocaleDateString('de-DE', { month: 'long' })}`);
           }
         }
 
         if (!wData) {
-          // Standard: nächste 5 Tage
-          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=5`);
+          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=5`, { signal });
           wData = (await wRes.json()).daily;
           setWeatherLabel('Wetter diese Woche');
         }
 
-        if (!cancelled) setWeather(wData);
-      } catch {}
+        setWeather(wData);
+      } catch (e) {
+        if (e.name !== 'AbortError') console.warn('Weather fetch failed', e);
+      }
     }
     load();
-    return () => { cancelled = true; };
+    return () => abortRef.current?.abort();
   }, [destination, travelDate]);
 
   if (!geo) return null;
@@ -338,15 +345,6 @@ function PackingList({ plan }) {
   );
 }
 
-function useIsMobile() {
-  const [mobile, setMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
-  useEffect(() => {
-    const handler = () => setMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
-  return mobile;
-}
 
 const TYPE_ICONS = {
   sehenswuerdigkeit: '🏛️',
@@ -451,6 +449,7 @@ function DayCard({ day }) {
 export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegenerate, onRegenerateWithBudget }) {
   const isMobile = useIsMobile();
   const [toast, setToast] = useState('');
+  const [imgFailed, setImgFailed] = useState(false);
   const [sidebarBudget, setSidebarBudget] = useState(plan?.budget || 1000);
   const [rating, setRating] = useState(() => {
     try {
@@ -515,13 +514,19 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
 
       {/* HEADER */}
       <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-        <img
-          src={`https://source.unsplash.com/featured/1400x500?${encodeURIComponent(plan.destination + ' travel city')}`}
-          alt={plan.destination}
-          loading="lazy"
-          onError={e => e.target.style.display = 'none'}
-          style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }}
-        />
+        {imgFailed ? (
+          <div style={{ width: '100%', height: 220, background: 'linear-gradient(135deg,#1e3a5f 0%,#2563eb 60%,#0ea5e9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 80, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }}>{plan.emoji || '✈️'}</span>
+          </div>
+        ) : (
+          <img
+            src={`https://source.unsplash.com/featured/1400x500?${encodeURIComponent(plan.destination + ' travel city')}`}
+            alt={plan.destination}
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+            style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }}
+          />
+        )}
         <div style={{ padding: '20px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>

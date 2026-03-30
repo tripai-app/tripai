@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import useIsMobile from '../hooks/useIsMobile';
 
 function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
   const [favs, setFavs] = useState([]);
   const ref = useRef(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     try {
@@ -23,33 +25,66 @@ function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
     window.dispatchEvent(new Event('favoritesUpdated'));
   };
 
-  return (
+  const removeAll = () => {
+    localStorage.setItem('tripai_favorites', '[]');
+    setFavs([]);
+    window.dispatchEvent(new Event('favoritesUpdated'));
+  };
+
+  const clearPlanCache = () => {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('tripai_cache_'));
+    keys.forEach(k => localStorage.removeItem(k));
+    onClose();
+    // kleines Feedback via title-flash
+    const orig = document.title;
+    document.title = '✅ Cache geleert!';
+    setTimeout(() => { document.title = orig; }, 2000);
+  };
+
+  const menuContent = (
     <div ref={ref} style={{
-      position: 'absolute', top: 62, right: 20,
-      background: '#fff', borderRadius: 18, width: 300,
-      boxShadow: '0 16px 48px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9',
-      zIndex: 200, overflow: 'hidden',
+      background: '#fff',
+      borderRadius: isMobile ? '20px 20px 0 0' : 18,
+      width: isMobile ? '100%' : 310,
+      boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
+      border: isMobile ? 'none' : '1px solid #f1f5f9',
+      overflow: 'hidden',
+      maxHeight: isMobile ? '85vh' : 'none',
+      display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #f1f5f9' }}>
+      {/* Header */}
+      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>❤️ Gespeicherte Reisen</div>
-      </div>
-      {favs.length === 0 ? (
-        <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-          Noch keine Reisen gespeichert.<br />
-          <span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>Drücke ❤️ nach dem Generieren.</span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {favs.length > 0 && (
+            <button onClick={removeAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#f87171', fontWeight: 600, padding: '2px 6px' }}>
+              Alle löschen
+            </button>
+          )}
+          {isMobile && (
+            <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 50, width: 28, height: 28, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          )}
         </div>
-      ) : (
-        <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-          {favs.map((f, i) => (
+      </div>
+
+      {/* Favoriten-Liste */}
+      <div style={{ overflowY: 'auto', flex: 1 }}>
+        {favs.length === 0 ? (
+          <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            Noch keine Reisen gespeichert.<br />
+            <span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>Drücke ❤️ nach dem Generieren.</span>
+          </div>
+        ) : (
+          favs.map((f, i) => (
             <div key={i} style={{ padding: '12px 20px', borderBottom: i < favs.length - 1 ? '1px solid #f8fafc' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 22 }}>{f.emoji || '✈️'}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{f.destination}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.destination}</div>
                   <div style={{ fontSize: 11, color: '#94a3b8' }}>{f.days} Tage · {f.persons} Pers. · {f.budget?.toLocaleString('de-DE')}€</div>
                   <div style={{ fontSize: 10, color: '#cbd5e1' }}>{f.date}</div>
                 </div>
-                <button onClick={() => remove(f.destination)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', fontSize: 16, padding: 4 }}>✕</button>
+                <button onClick={() => remove(f.destination)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', fontSize: 16, padding: 4, flexShrink: 0 }}>✕</button>
               </div>
               {f.fullPlan && (
                 <button onClick={() => { onOpenPlan(f.fullPlan); onClose(); }} style={{
@@ -61,10 +96,12 @@ function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
                 </button>
               )}
             </div>
-          ))}
-        </div>
-      )}
-      <div style={{ padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          ))
+        )}
+      </div>
+
+      {/* Footer-Buttons */}
+      <div style={{ padding: '10px 20px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, borderTop: '1px solid #f1f5f9' }}>
         {favs.length >= 2 && (
           <button onClick={() => { onCompare(); onClose(); }} style={{ width: '100%', background: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             📊 Reisen vergleichen
@@ -73,7 +110,26 @@ function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
         <button onClick={() => { onNavigate('planner'); onClose(); }} style={{ width: '100%', background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           ✈️ Neue Reise planen
         </button>
+        <button onClick={clearPlanCache} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#94a3b8', padding: '4px 0', textAlign: 'center' }}>
+          🗑️ Plancache leeren
+        </button>
       </div>
+    </div>
+  );
+
+  // Mobile: Fullscreen-Overlay mit Backdrop
+  if (isMobile) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}>
+        {menuContent}
+      </div>
+    );
+  }
+
+  // Desktop: Dropdown
+  return (
+    <div style={{ position: 'absolute', top: 62, right: 20, zIndex: 200 }}>
+      {menuContent}
     </div>
   );
 }
@@ -121,7 +177,7 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={onToggleDark} title={darkMode ? 'Light Mode' : 'Dark Mode'} style={{
+          <button onClick={onToggleDark} title={darkMode ? 'Light Mode' : 'Dark Mode'} aria-label={darkMode ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'} style={{
             background: '#f8fafc', border: '1px solid #e2e8f0',
             borderRadius: 50, padding: '7px 12px', cursor: 'pointer',
             fontSize: 16, lineHeight: 1, transition: 'all 0.2s',
@@ -129,7 +185,7 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
             {darkMode ? '☀️' : '🌙'}
           </button>
 
-          <button onClick={() => setShowFavs(v => !v)} style={{
+          <button onClick={() => setShowFavs(v => !v)} aria-label="Gespeicherte Reisen" style={{
             background: showFavs ? '#fff1f2' : '#f8fafc',
             border: `1px solid ${showFavs ? '#fecaca' : '#e2e8f0'}`,
             borderRadius: 50, padding: '7px 14px',

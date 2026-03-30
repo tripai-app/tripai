@@ -1,4 +1,4 @@
-import { useState, useEffect, Component } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import './App.css';
 import { Analytics } from '@vercel/analytics/react';
 import Navbar from './components/Navbar';
@@ -120,7 +120,18 @@ export default function App() {
     try { localStorage.setItem(key, JSON.stringify({ plan, ts: Date.now() })); } catch {}
   };
 
+  const lastGenerateRef = React.useRef(0);
+
   const handleGenerate = async (formData) => {
+    // Client-seitiges Rate-Limiting: max 1 Anfrage alle 8 Sekunden
+    const now = Date.now();
+    if (now - lastGenerateRef.current < 8000) {
+      setError('Bitte warte einen Moment bevor du erneut generierst.');
+      navigate('planner');
+      return;
+    }
+    lastGenerateRef.current = now;
+
     setLoading(true);
     setError(null);
     setLastFormData(formData);

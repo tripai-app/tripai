@@ -54,10 +54,12 @@ export function getGetYourGuideLink(destination) {
   return `${base}?${params.toString()}`;
 }
 
-export function getSkyscannerLink(persons) {
-  const base = 'https://www.skyscanner.net/transport/flights/';
+export function getSkyscannerLink(destination, persons) {
+  // Destination als IATA-Code-Suche übergeben
+  const dest = encodeURIComponent(destination || '');
+  const base = `https://www.skyscanner.net/transport/flights-from/${dest}/`;
   const params = new URLSearchParams({
-    adults: persons,
+    adults: persons || 1,
     ...(AFFILIATE.skyscanner.active && { associateid: AFFILIATE.skyscanner.associateId }),
   });
   return `${base}?${params.toString()}`;
