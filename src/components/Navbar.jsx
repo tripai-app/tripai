@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-function FavoritesMenu({ onClose, onNavigate, onCompare }) {
+function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
   const [favs, setFavs] = useState([]);
   const ref = useRef(null);
 
@@ -40,14 +40,25 @@ function FavoritesMenu({ onClose, onNavigate, onCompare }) {
       ) : (
         <div style={{ maxHeight: 320, overflowY: 'auto' }}>
           {favs.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px', borderBottom: i < favs.length - 1 ? '1px solid #f8fafc' : 'none' }}>
-              <span style={{ fontSize: 22 }}>{f.emoji || '✈️'}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{f.destination}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>{f.days} Tage · {f.persons} Pers. · {f.budget?.toLocaleString('de-DE')}€</div>
-                <div style={{ fontSize: 10, color: '#cbd5e1' }}>{f.date}</div>
+            <div key={i} style={{ padding: '12px 20px', borderBottom: i < favs.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 22 }}>{f.emoji || '✈️'}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{f.destination}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{f.days} Tage · {f.persons} Pers. · {f.budget?.toLocaleString('de-DE')}€</div>
+                  <div style={{ fontSize: 10, color: '#cbd5e1' }}>{f.date}</div>
+                </div>
+                <button onClick={() => remove(f.destination)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', fontSize: 16, padding: 4 }}>✕</button>
               </div>
-              <button onClick={() => remove(f.destination)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', fontSize: 16, padding: 4 }}>✕</button>
+              {f.fullPlan && (
+                <button onClick={() => { onOpenPlan(f.fullPlan); onClose(); }} style={{
+                  marginTop: 8, width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0',
+                  borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700,
+                  color: '#2563eb', cursor: 'pointer', textAlign: 'center',
+                }}>
+                  Plan anzeigen →
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -66,7 +77,7 @@ function FavoritesMenu({ onClose, onNavigate, onCompare }) {
   );
 }
 
-export default function Navbar({ page, onNavigate, darkMode, onToggleDark }) {
+export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpenPlan }) {
   const [showFavs, setShowFavs] = useState(false);
   const [favCount, setFavCount] = useState(0);
   const active = page === 'planner' || page === 'loading';
@@ -141,7 +152,7 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark }) {
           </button>
         </div>
 
-        {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onCompare={() => onNavigate('compare')} />}
+        {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onCompare={() => onNavigate('compare')} onOpenPlan={onOpenPlan} />}
       </div>
     </nav>
   );

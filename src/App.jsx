@@ -76,6 +76,7 @@ export default function App() {
   const handlePlanDestination = (dest) => { setDefaultDestination(dest); navigate('planner'); };
   const handleBack = () => navigate('home');
   const handleNewTrip = () => { setDefaultDestination(''); setPlan(null); navigate('planner'); };
+  const handleOpenPlan = (savedPlan) => { setPlan(savedPlan); navigate('itinerary'); };
 
   const handleSurpriseTrip = () => {
     const dest = SURPRISE_DESTINATIONS[Math.floor(Math.random() * SURPRISE_DESTINATIONS.length)];
@@ -138,7 +139,7 @@ export default function App() {
     <ErrorBoundary>
       <div style={{ filter: darkMode ? 'invert(92%) hue-rotate(180deg)' : 'none', minHeight: '100vh' }}
            className={darkMode ? 'dark-mode' : ''}>
-        <Navbar page={page} onNavigate={navigate} darkMode={darkMode} onToggleDark={toggleDark} />
+        <Navbar page={page} onNavigate={navigate} darkMode={darkMode} onToggleDark={toggleDark} onOpenPlan={handleOpenPlan} />
 
         {page === 'home' && (
           <Hero

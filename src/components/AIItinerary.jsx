@@ -289,7 +289,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         setIsFav(false);
         showToast('💔 Aus Favoriten entfernt');
       } else {
-        favs.unshift({ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE') });
+        favs.unshift({ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE'), fullPlan: plan });
         localStorage.setItem('tripai_favorites', JSON.stringify(favs.slice(0, 20)));
         setIsFav(true);
         showToast('❤️ Zu Favoriten hinzugefügt!');
