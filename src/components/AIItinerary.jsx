@@ -357,7 +357,7 @@ const TYPE_ICONS = {
   nachtleben: '🎉',
 };
 
-function Slot({ slot, isLast }) {
+function Slot({ slot, isLast, destination }) {
   const icon = TYPE_ICONS[slot.type] || '📍';
   return (
     <div style={{ display: 'flex', gap: 16, paddingBottom: isLast ? 0 : 22 }}>
@@ -402,19 +402,19 @@ function Slot({ slot, isLast }) {
           </div>
         )}
         <a
-          href={`https://www.google.com/maps/search/${encodeURIComponent(slot.name)}`}
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((slot.name || '') + (destination ? ' ' + destination : ''))}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontSize: 11, color: '#94a3b8', marginTop: 7, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+          style={{ fontSize: 11, color: '#2563eb', marginTop: 7, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none', fontWeight: 600 }}
         >
-          🗺️ Google Maps
+          🗺️ In Maps öffnen
         </a>
       </div>
     </div>
   );
 }
 
-function DayCard({ day }) {
+function DayCard({ day, destination }) {
   return (
     <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 2px 16px rgba(0,0,0,0.05)', marginBottom: 14, overflow: 'hidden' }}>
       <div style={{ padding: '18px 24px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
@@ -430,7 +430,7 @@ function DayCard({ day }) {
       </div>
       <div style={{ padding: '20px 24px' }}>
         {day.slots?.map((slot, i) => (
-          <Slot key={i} slot={slot} isLast={i === day.slots.length - 1} />
+          <Slot key={i} slot={slot} isLast={i === day.slots.length - 1} destination={destination} />
         ))}
       </div>
       {day.hiddenGem && (
@@ -653,7 +653,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 14, letterSpacing: '-0.3px' }}>
               📅 Tagesplan
             </h2>
-            {plan.days?.map((day, i) => <DayCard key={i} day={day} />)}
+            {plan.days?.map((day, i) => <DayCard key={i} day={day} destination={plan.destination} />)}
 
             {/* Affiliate Links */}
             <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} />
