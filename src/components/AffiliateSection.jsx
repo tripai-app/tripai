@@ -1,4 +1,4 @@
-import { getBookingLink, getGetYourGuideLink, getSkyscannerLink, getRentalcarsLink } from '../data/affiliateConfig';
+import { getBookingLink, getGetYourGuideLink, getSkyscannerLink, getRentalcarsLink, getAirbnbLink, getViatorLink, getLufthansaLink } from '../data/affiliateConfig';
 
 const partners = (destination, persons, days, departureCity) => [
   {
@@ -47,6 +47,42 @@ const partners = (destination, persons, days, departureCity) => [
     bg: '#fdeaed',
     cta: 'Auto mieten',
     link: getRentalcarsLink(destination),
+    badge: null,
+  },
+  {
+    id: 'airbnb',
+    logo: '🏠',
+    name: 'Airbnb',
+    desc: `Ferienwohnungen & Zimmer in ${destination}`,
+    sub: 'Einzigartige Unterkünfte weltweit',
+    color: '#ff5a5f',
+    bg: '#fff0f0',
+    cta: 'Unterkunft finden',
+    link: getAirbnbLink(destination, persons),
+    badge: 'Neu',
+  },
+  {
+    id: 'viator',
+    logo: '🎟️',
+    name: 'Viator',
+    desc: `Touren & Erlebnisse in ${destination}`,
+    sub: 'Ausflüge • Tickets • Aktivitäten',
+    color: '#1a1a2e',
+    bg: '#f0f0f8',
+    cta: 'Erlebnisse buchen',
+    link: getViatorLink(destination),
+    badge: null,
+  },
+  {
+    id: 'lufthansa',
+    logo: '🛫',
+    name: 'Lufthansa',
+    desc: `Direktflüge nach ${destination}`,
+    sub: 'Premium • Miles & More • Zuverlässig',
+    color: '#05164d',
+    bg: '#e8eaf6',
+    cta: 'Flug buchen',
+    link: getLufthansaLink(destination, departureCity),
     badge: null,
   },
 ];

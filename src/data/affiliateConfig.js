@@ -1,62 +1,79 @@
 // ============================================
-// AFFILIATE KONFIGURATION
+// AFFILIATE KONFIGURATION — 8 Partner
 // ============================================
 // Ersetze die Platzhalter mit deinen echten IDs
 // sobald du dich bei den Partnern angemeldet hast.
 //
-// Booking.com Partner:  partners.booking.com
-// GetYourGuide Partner: partner.getyourguide.com
-// Skyscanner Partner:   partners.skyscanner.net
-// Rentalcars Partner:   partners.rentalcars.com
+// Booking.com:   partners.booking.com
+// GetYourGuide:  partner.getyourguide.com
+// Skyscanner:    partners.skyscanner.net
+// Rentalcars:    partners.rentalcars.com
+// Amazon:        partnernet.amazon.de
+// Airbnb:        airbnb.de/affiliates  (via impact.com)
+// Viator:        partner.viator.com
+// Lufthansa:     deutschebahn.awin.com (via Awin-Netzwerk)
 // ============================================
 
 export const AFFILIATE = {
   booking: {
-    aid: 'DEINE_BOOKING_ID',       // Ersetzen nach Anmeldung
+    aid: 'DEINE_BOOKING_ID',
     active: false,
   },
   getyourguide: {
-    partnerId: 'DEINE_GYG_ID',     // Ersetzen nach Anmeldung
+    partnerId: 'DEINE_GYG_ID',
     active: false,
   },
   skyscanner: {
-    associateId: 'DEINE_SKY_ID',   // Ersetzen nach Anmeldung
+    associateId: 'DEINE_SKY_ID',
     active: false,
   },
   rentalcars: {
-    affiliateId: 'DEINE_RC_ID',    // Ersetzen nach Anmeldung
+    affiliateId: 'DEINE_RC_ID',
     active: false,
   },
   amazon: {
-    tag: 'DEINE_AMAZON_TAG',       // Ersetzen nach Anmeldung: affiliate.amazon.de
+    tag: 'DEINE_AMAZON_TAG',          // Format: name-21
+    active: false,
+  },
+  airbnb: {
+    // Airbnb Affiliate via impact.com — nach Anmeldung erhältst du einen Tracking-Link
+    // Den kompletten Link in airbnbBaseUrl eintragen (ersetzt die URL unten)
+    airbnbBaseUrl: '',                 // z.B. 'https://airbnb.de/c/DEINCODE'
+    active: false,
+  },
+  viator: {
+    partnerId: 'DEINE_VIATOR_ID',     // Format: P12345
+    active: false,
+  },
+  lufthansa: {
+    // Lufthansa Affiliate über Awin-Netzwerk (awin.com → Lufthansa suchen)
+    // Nach Genehmigung: Awin Deep-Link Generator nutzen
+    awinId: 'DEINE_AWIN_ID',          // Deine Awin Publisher-ID
     active: false,
   },
 };
 
-// Generiert Affiliate-Links mit Ziel & Personen
+// ── Link-Generatoren ──────────────────────────────────────
+
 export function getBookingLink(destination, persons, days) {
-  const base = 'https://www.booking.com/searchresults.html';
   const params = new URLSearchParams({
     ss: destination,
     group_adults: persons,
     no_rooms: 1,
     ...(AFFILIATE.booking.active && { aid: AFFILIATE.booking.aid }),
   });
-  return `${base}?${params.toString()}`;
+  return `https://www.booking.com/searchresults.html?${params.toString()}`;
 }
 
 export function getGetYourGuideLink(destination) {
-  const base = 'https://www.getyourguide.com/s/';
   const params = new URLSearchParams({
     q: destination,
     ...(AFFILIATE.getyourguide.active && { partner_id: AFFILIATE.getyourguide.partnerId }),
   });
-  return `${base}?${params.toString()}`;
+  return `https://www.getyourguide.com/s/?${params.toString()}`;
 }
 
 export function getSkyscannerLink(destination, persons, departureCity = '') {
-  // whereToQuery / whereFromQuery sind echte Skyscanner-URL-Parameter
-  // die die Suchfelder direkt vorbelegen — kein IATA-Code nötig
   const params = new URLSearchParams({
     adults: persons || 1,
     whereToQuery: destination || '',
@@ -66,17 +83,52 @@ export function getSkyscannerLink(destination, persons, departureCity = '') {
   return `https://www.skyscanner.de/transport/fluge/?${params.toString()}`;
 }
 
+export function getRentalcarsLink(destination) {
+  const params = new URLSearchParams({
+    dropoffLocation: destination,
+    ...(AFFILIATE.rentalcars.active && { affiliateCode: AFFILIATE.rentalcars.affiliateId }),
+  });
+  return `https://www.rentalcars.com/?${params.toString()}`;
+}
+
 export function getAmazonLink(searchTerm) {
   const params = new URLSearchParams({ k: searchTerm });
   if (AFFILIATE.amazon.active) params.set('tag', AFFILIATE.amazon.tag);
   return `https://www.amazon.de/s?${params.toString()}`;
 }
 
-export function getRentalcarsLink(destination) {
-  const base = 'https://www.rentalcars.com/';
+export function getAirbnbLink(destination, persons) {
+  if (AFFILIATE.airbnb.active && AFFILIATE.airbnb.airbnbBaseUrl) {
+    // Eigener Tracking-Link von impact.com mit Destination als Referenz
+    return `${AFFILIATE.airbnb.airbnbBaseUrl}`;
+  }
+  // Direktlink: Suche nach Unterkünften am Zielort
   const params = new URLSearchParams({
-    dropoffLocation: destination,
-    ...(AFFILIATE.rentalcars.active && { affiliateCode: AFFILIATE.rentalcars.affiliateId }),
+    adults: persons || 1,
   });
-  return `${base}?${params.toString()}`;
+  return `https://www.airbnb.de/s/${encodeURIComponent(destination)}/homes?${params.toString()}`;
+}
+
+export function getViatorLink(destination) {
+  if (AFFILIATE.viator.active) {
+    // Viator Affiliate-Link Format
+    const params = new URLSearchParams({
+      text: destination,
+      pid: AFFILIATE.viator.partnerId,
+      mcid: '42383',
+      medium: 'link',
+    });
+    return `https://www.viator.com/de-DE/search?${params.toString()}`;
+  }
+  return `https://www.viator.com/de-DE/search?text=${encodeURIComponent(destination)}`;
+}
+
+export function getLufthansaLink(destination, departureCity = '') {
+  if (AFFILIATE.lufthansa.active) {
+    // Awin Deep-Link für Lufthansa
+    const target = encodeURIComponent(`https://www.lufthansa.com/de/de/fluge-suchen?destination=${encodeURIComponent(destination)}`);
+    return `https://www.awin1.com/cread.php?awinmid=1190&awinaffid=${AFFILIATE.lufthansa.awinId}&clickref=tripai&p=${target}`;
+  }
+  // Direktlink zur Lufthansa-Suche
+  return `https://www.lufthansa.com/de/de/fluge-suchen`;
 }
