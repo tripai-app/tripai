@@ -54,15 +54,16 @@ export function getGetYourGuideLink(destination) {
   return `${base}?${params.toString()}`;
 }
 
-export function getSkyscannerLink(destination, persons) {
-  // Destination als IATA-Code-Suche übergeben
-  const dest = encodeURIComponent(destination || '');
-  const base = `https://www.skyscanner.net/transport/flights-from/${dest}/`;
+export function getSkyscannerLink(destination, persons, departureCity = '') {
+  // whereToQuery / whereFromQuery sind echte Skyscanner-URL-Parameter
+  // die die Suchfelder direkt vorbelegen — kein IATA-Code nötig
   const params = new URLSearchParams({
     adults: persons || 1,
+    whereToQuery: destination || '',
+    ...(departureCity && { whereFromQuery: departureCity }),
     ...(AFFILIATE.skyscanner.active && { associateid: AFFILIATE.skyscanner.associateId }),
   });
-  return `${base}?${params.toString()}`;
+  return `https://www.skyscanner.de/transport/fluge/?${params.toString()}`;
 }
 
 export function getAmazonLink(searchTerm) {

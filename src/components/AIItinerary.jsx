@@ -637,6 +637,13 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{h.name} {'⭐'.repeat(Math.min(h.stars || 3, 5))}</div>
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>📍 {h.location}</div>
                         {h.highlight && <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>{h.highlight}</div>}
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' Hotel ' + plan.destination)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, color: '#2563eb', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          🗺️ In Maps öffnen
+                        </a>
                       </div>
                       <div style={{ textAlign: 'right', marginLeft: 12, flexShrink: 0 }}>
                         <div style={{ fontSize: 10, color: '#94a3b8' }}>ab</div>
@@ -656,7 +663,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             {plan.days?.map((day, i) => <DayCard key={i} day={day} destination={plan.destination} />)}
 
             {/* Affiliate Links */}
-            <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} />
+            <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} departureCity={plan.departureCity} />
 
             {/* TikTok Spots */}
             {plan.tiktokSpots?.length > 0 && (

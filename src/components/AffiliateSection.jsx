@@ -1,6 +1,6 @@
 import { getBookingLink, getGetYourGuideLink, getSkyscannerLink, getRentalcarsLink } from '../data/affiliateConfig';
 
-const partners = (destination, persons, days) => [
+const partners = (destination, persons, days, departureCity) => [
   {
     id: 'booking',
     logo: '🏨',
@@ -34,7 +34,7 @@ const partners = (destination, persons, days) => [
     color: '#0770e3',
     bg: '#e8f1fd',
     cta: 'Flüge vergleichen',
-    link: getSkyscannerLink(destination, persons),
+    link: getSkyscannerLink(destination, persons, departureCity),
     badge: null,
   },
   {
@@ -51,8 +51,8 @@ const partners = (destination, persons, days) => [
   },
 ];
 
-export default function AffiliateSection({ destination, persons, days }) {
-  const cards = partners(destination, persons, days);
+export default function AffiliateSection({ destination, persons, days, departureCity }) {
+  const cards = partners(destination, persons, days, departureCity);
 
   return (
     <div style={{ marginTop: 32, marginBottom: 8 }}>
