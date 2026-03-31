@@ -24,7 +24,7 @@ function getSteps(destination) {
   ];
 }
 
-export default function LoadingScreen({ destination }) {
+export default function LoadingScreen({ destination, statusMsg }) {
   const [activeStep, setActiveStep] = useState(0);
   const [fact] = useState(() => TRAVEL_FACTS[Math.floor(Math.random() * TRAVEL_FACTS.length)]);
   const STEPS = getSteps(destination);
@@ -61,9 +61,14 @@ export default function LoadingScreen({ destination }) {
       }}>
         {destination}
       </h2>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 15, marginBottom: 40, textAlign: 'center' }}>
+      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 15, marginBottom: statusMsg ? 16 : 40, textAlign: 'center' }}>
         Dein persönlicher KI-Reiseplan wird erstellt…
       </p>
+      {statusMsg && (
+        <div style={{ background: 'rgba(37,99,235,0.18)', border: '1px solid rgba(37,99,235,0.35)', borderRadius: 50, padding: '8px 20px', marginBottom: 24, fontSize: 13, fontWeight: 700, color: '#93c5fd', textAlign: 'center' }}>
+          ⏳ {statusMsg}
+        </div>
+      )}
 
       {/* Progress bar */}
       <div style={{ width: '100%', maxWidth: 380, marginBottom: 36 }}>

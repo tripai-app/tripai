@@ -24,7 +24,13 @@ export default async function handler(req) {
     });
   }
 
-  const { destination, days, persons, budget, hotelCategory, interests, includeTiktok = true, includeHiddenGems = true, wishes = '', travelDate = '', departureCity = '' } = body;
+  const {
+    destination, days, persons, budget, hotelCategory, interests,
+    includeTiktok = true, includeHiddenGems = true, wishes = '',
+    travelDate = '', departureCity = '',
+    // Split-Modus: nur bestimmte Tage generieren
+    splitMode = false, splitStartDay = 1,
+  } = body;
 
   const hotelLabel = {
     budget: 'Hostel oder günstiges Hotel (2-Sterne, unter 50€/Nacht)',
@@ -47,7 +53,24 @@ export default async function handler(req) {
   const tiktokSection = includeTiktok ? `,"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Uhrzeit"}]` : '';
   const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
 
-  const prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
+  // ── Split-Modus: nur zusätzliche Tage generieren (für Trips > 7 Tage) ──
+  let prompt;
+  let maxTokens;
+
+  if (splitMode) {
+    const splitDays = days - splitStartDay + 1;
+    maxTokens = Math.min(600 + splitDays * 380, 3500);
+    prompt = `Reise-Experte. NUR valides JSON, kein Text.
+
+Fortsetzung: ${destination}, ${days} Tage gesamt, ${persons} Personen, ${budget}€, Interessen: ${interestsList || 'Allgemein'}${travelDate ? `, Reisedatum: ${travelDate}` : ''}
+
+Generiere NUR die Tage ${splitStartDay} bis ${days} als JSON-Array:
+[{"dayNumber":${splitStartDay},"title":"Titel","theme":"🗺️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}]
+
+Alle ${splitDays} Tage (${splitStartDay}–${days}) ausgeben. Echte Ortsnamen.`;
+  } else {
+    maxTokens = Math.min(900 + days * 380, 4000);
+    prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
 Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}
 
@@ -55,9 +78,7 @@ JSON-Schema (ALLE ${days} Tage, max 6 Wörter pro Textfeld, kurz halten):
 {"destination":"${destination}","emoji":"🏝️","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Air","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Tipp"}],"days":[{"dayNumber":1,"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
 
 Alle ${days} Tage ausgeben. Echte Ortsnamen.`;
-
-  // Kein Minimum-Floor mehr — verhindert unnötig viele Tokens bei kurzen Trips
-  const maxTokens = Math.min(900 + days * 380, 4000);
+  }
 
   // Anthropic mit stream:true aufrufen
   const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -117,25 +138,34 @@ Alle ${days} Tage ausgeben. Echte Ortsnamen.`;
               // Heartbeat damit Vercel die Verbindung offen hält
               send({ type: 'chunk' });
             } else if (event.type === 'message_stop') {
-              // JSON aus dem gesammelten Text extrahieren
-              const jsonMatch = fullText.match(/\{[\s\S]*\}/);
-              if (!jsonMatch) { send({ type: 'error', message: 'Ungültige KI-Antwort' }); break; }
-
-              let plan;
-              try {
-                plan = JSON.parse(jsonMatch[0]);
-              } catch {
-                let jsonStr = jsonMatch[0];
-                while (jsonStr.length > 10) {
-                  try { plan = JSON.parse(jsonStr + ']}]}'); break; }
-                  catch { jsonStr = jsonStr.slice(0, jsonStr.lastIndexOf(',')); }
+              if (splitMode) {
+                // Split-Modus: Array von Tagen extrahieren
+                const arrMatch = fullText.match(/\[[\s\S]*\]/);
+                if (!arrMatch) { send({ type: 'error', message: 'Ungültige Antwort (Split)' }); break; }
+                let days;
+                try { days = JSON.parse(arrMatch[0]); } catch {
+                  let s = arrMatch[0];
+                  while (s.length > 5) {
+                    try { days = JSON.parse(s + ']}'); break; }
+                    catch { s = s.slice(0, s.lastIndexOf(',')); }
+                  }
                 }
-              }
-
-              if (plan) {
-                send({ type: 'done', plan });
+                if (days) send({ type: 'done', days });
+                else send({ type: 'error', message: 'Split-Antwort konnte nicht verarbeitet werden.' });
               } else {
-                send({ type: 'error', message: 'Antwort konnte nicht verarbeitet werden. Bitte nochmal versuchen.' });
+                // Normaler Modus: volles Plan-Objekt extrahieren
+                const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) { send({ type: 'error', message: 'Ungültige KI-Antwort' }); break; }
+                let plan;
+                try { plan = JSON.parse(jsonMatch[0]); } catch {
+                  let jsonStr = jsonMatch[0];
+                  while (jsonStr.length > 10) {
+                    try { plan = JSON.parse(jsonStr + ']}]}'); break; }
+                    catch { jsonStr = jsonStr.slice(0, jsonStr.lastIndexOf(',')); }
+                  }
+                }
+                if (plan) send({ type: 'done', plan });
+                else send({ type: 'error', message: 'Antwort konnte nicht verarbeitet werden. Bitte nochmal versuchen.' });
               }
             } else if (event.type === 'error') {
               send({ type: 'error', message: event.error?.message || 'KI-Fehler' });

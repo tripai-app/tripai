@@ -50,6 +50,7 @@ export default function App() {
   const [plan, setPlan] = useState(null);
   const [lastFormData, setLastFormData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('tripai_dark') === '1');
 
@@ -149,48 +150,58 @@ export default function App() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/generate-trip', {
+    // ── Hilfsfunktion: eine API-Anfrage stellen und SSE parsen ──
+    const callApi = async (body) => {
+      const res = await fetch('/api/generate-trip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
-
-      // Antwort als Text lesen (funktioniert für SSE und JSON gleichermaßen)
-      const rawText = await response.text();
-
-      // Hilfsfunktion: Plan aus Text extrahieren (SSE oder JSON)
-      const extractPlan = (text) => {
-        // SSE-Format: "data: {"type":"done","plan":{...}}"
-        const sseLines = text.split('\n');
-        for (const line of sseLines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === 'done' && event.plan) return { plan: event.plan };
-            if (event.type === 'error') return { error: event.message };
-          } catch {}
-        }
-        // Altes JSON-Format: {"plan":{...}}
+      const raw = await res.text();
+      // SSE parsen
+      for (const line of raw.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
         try {
-          const data = JSON.parse(rawText);
-          if (data.plan) return { plan: data.plan };
-          if (data.error) return { error: data.error };
-        } catch {}
-        return null;
-      };
+          const ev = JSON.parse(line.slice(6));
+          if (ev.type === 'done') return ev;       // { plan } oder { days }
+          if (ev.type === 'error') throw new Error(ev.message);
+        } catch (e) { if (e.message !== 'Unexpected token') throw e; }
+      }
+      // Fallback: plain JSON
+      try {
+        const data = JSON.parse(raw);
+        if (data.error) throw new Error(data.error);
+        return data;
+      } catch {}
+      throw new Error('Keine gültige Antwort vom Server. Bitte nochmal versuchen.');
+    };
 
-      if (!response.ok) {
-        const result = extractPlan(rawText);
-        throw new Error(result?.error || rawText.slice(0, 150) || 'Fehler beim Generieren');
+    try {
+      let finalPlan;
+
+      if (formData.days > 7) {
+        // ── Split: erst Tage 1-7 (mit vollem Plan), dann 8-N ──
+        setLoadingMsg('Tage 1–7 werden geplant…');
+        const first = await callApi({ ...formData, days: 7 });
+        if (!first.plan) throw new Error('Erster Planabschnitt fehlgeschlagen.');
+
+        setLoadingMsg(`Tage 8–${formData.days} werden geplant…`);
+        const second = await callApi({
+          ...formData,
+          splitMode: true,
+          splitStartDay: 8,
+        });
+        if (!second.days) throw new Error('Zweiter Planabschnitt fehlgeschlagen.');
+
+        finalPlan = { ...first.plan, days: [...first.plan.days, ...second.days] };
+      } else {
+        const result = await callApi(formData);
+        if (!result.plan) throw new Error('Kein Plan erhalten.');
+        finalPlan = result.plan;
       }
 
-      const result = extractPlan(rawText);
-      if (!result) throw new Error('Keine gültige Antwort vom Server. Bitte nochmal versuchen.');
-      if (result.error) throw new Error(result.error);
-
-      writeCache(cacheKey, result.plan);
-      setPlan({ ...result.plan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
+      writeCache(cacheKey, finalPlan);
+      setPlan({ ...finalPlan, budget: formData.budget, persons: formData.persons, travelDate: formData.travelDate || '', departureCity: formData.departureCity || '' });
       navigate('itinerary');
 
     } catch (err) {
@@ -198,6 +209,7 @@ export default function App() {
       navigate('planner');
     } finally {
       setLoading(false);
+      setLoadingMsg('');
     }
   };
 
@@ -227,7 +239,7 @@ export default function App() {
         )}
 
         {page === 'loading' && (
-          <LoadingScreen destination={plannedDestination} />
+          <LoadingScreen destination={plannedDestination} statusMsg={loadingMsg} />
         )}
 
         {page === 'compare' && (
