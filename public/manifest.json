@@ -1,0 +1,21 @@
+{
+  "name": "TripAI — KI-Reiseplaner",
+  "short_name": "TripAI",
+  "description": "Dein KI-Reiseplaner: Kompletter Urlaub in Sekunden planen — Hotels, Restaurants, Geheimtipps & Budget.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef2ff",
+  "theme_color": "#2563eb",
+  "lang": "de",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "lifestyle"],
+  "screenshots": []
+}
