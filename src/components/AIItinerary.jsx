@@ -3,6 +3,24 @@ import AffiliateSection from './AffiliateSection';
 import { getAmazonLink } from '../data/affiliateConfig';
 import useIsMobile from '../hooks/useIsMobile';
 
+// Zählt animiert von 0 auf Zielwert hoch
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!target) return;
+    let startTime;
+    const animate = (ts) => {
+      if (!startTime) startTime = ts;
+      const progress = Math.min((ts - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(target * eased));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [target, duration]);
+  return value;
+}
+
 function generatePacklist(plan) {
   const dest = (plan.destination || '').toLowerCase();
   const slots = plan.days?.flatMap(d => d.slots || []) || [];
@@ -450,6 +468,13 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
   const isMobile = useIsMobile();
   const [toast, setToast] = useState('');
   const [imgFailed, setImgFailed] = useState(false);
+
+  // Animierte Budget-Zahlen
+  const animTotal = useCountUp(plan?.costs?.gesamt || 0);
+  const animTransport = useCountUp(plan?.costs?.transport || 0);
+  const animHotel = useCountUp(plan?.costs?.hotel || 0);
+  const animEssen = useCountUp(plan?.costs?.essen || 0);
+  const animAktiv = useCountUp(plan?.costs?.aktivitaeten || 0);
   const [sidebarBudget, setSidebarBudget] = useState(plan?.budget || 1000);
   const [rating, setRating] = useState(() => {
     try {
@@ -558,6 +583,9 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <button onClick={handleShare} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 🔗 Teilen
               </button>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`Schau dir meinen ${plan.days?.length}-Tage Reiseplan für ${plan.destination} an! 🌍✈️\nhttps://tripai-omega.vercel.app/?dest=${encodeURIComponent(plan.destination)}`)}`} target="_blank" rel="noopener noreferrer" style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', transition: 'all 0.2s' }}>
+                💬 WhatsApp
+              </a>
               <button onClick={handlePrint} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 📄 PDF
               </button>
@@ -637,6 +665,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{h.name} {'⭐'.repeat(Math.min(h.stars || 3, 5))}</div>
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>📍 {h.location}</div>
                         {h.highlight && <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>{h.highlight}</div>}
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' ' + plan.destination + ' hotel')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 3, textDecoration: 'none', fontWeight: 600 }}>🗺️ In Maps öffnen</a>
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' Hotel ' + plan.destination)}`}
                           target="_blank" rel="noopener noreferrer"
@@ -746,7 +775,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <div style={{ background: 'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius: 16, padding: 20, marginBottom: 20, textAlign: 'center' }}>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 700, letterSpacing: '0.8px', marginBottom: 6 }}>GESCHÄTZTE KOSTEN</div>
                 <div style={{ fontSize: 32, fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>
-                  {plan.costs?.gesamt?.toLocaleString('de-DE')}€
+                  {animTotal.toLocaleString('de-DE')}€
                 </div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>
                   von {parseInt(plan.budget).toLocaleString('de-DE')}€ Budget
@@ -754,18 +783,18 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               </div>
 
               {[
-                ['✈️ Flüge', plan.costs?.transport, '#3b82f6'],
-                ['🏨 Hotel', plan.costs?.hotel, '#8b5cf6'],
-                ['🍽️ Essen', plan.costs?.essen, '#f59e0b'],
-                ['🎯 Aktivitäten', plan.costs?.aktivitaeten, '#10b981'],
-              ].filter(([, amt]) => amt > 0).map(([label, amount, color]) => {
-                const pct = Math.round((amount / (plan.costs?.gesamt || 1)) * 100);
+                ['✈️ Flüge', animTransport, plan.costs?.transport, '#3b82f6'],
+                ['🏨 Hotel', animHotel, plan.costs?.hotel, '#8b5cf6'],
+                ['🍽️ Essen', animEssen, plan.costs?.essen, '#f59e0b'],
+                ['🎯 Aktivitäten', animAktiv, plan.costs?.aktivitaeten, '#10b981'],
+              ].filter(([, , raw]) => raw > 0).map(([label, anim, raw, color]) => {
+                const pct = Math.round((raw / (plan.costs?.gesamt || 1)) * 100);
                 return (
                   <div key={label} style={{ marginBottom: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
                       <span style={{ fontWeight: 600, color: '#475569' }}>{label}</span>
                       <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                        {amount?.toLocaleString('de-DE')}€
+                        {anim.toLocaleString('de-DE')}€
                         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 5 }}>{pct}%</span>
                       </span>
                     </div>

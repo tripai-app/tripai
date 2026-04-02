@@ -80,7 +80,8 @@ export function getSkyscannerLink(destination, persons, departureCity = '') {
     ...(departureCity && { whereFromQuery: departureCity }),
     ...(AFFILIATE.skyscanner.active && { associateid: AFFILIATE.skyscanner.associateId }),
   });
-  return `https://www.skyscanner.de/transport/fluge/?${params.toString()}`;
+  // .net/transport/flights/ ist stabiler als .de/transport/fluge/ (kein Umlaut-Problem)
+  return `https://www.skyscanner.net/transport/flights/?${params.toString()}`;
 }
 
 export function getRentalcarsLink(destination) {

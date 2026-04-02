@@ -1,5 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useIsMobile from '../hooks/useIsMobile';
+
+const TOP_CITIES = [
+  'Bali','Tokio','Bangkok','Kyoto','Singapur','New York','Miami','Lissabon',
+  'Porto','Barcelona','Amsterdam','Prag','Budapest','Wien','Santorini',
+  'Marrakesch','Kapstadt','Dubai','Malediven','Kopenhagen','Stockholm',
+  'Edinburgh','Florenz','Luzern','Reykjavik','Chiang Mai','Hanoi',
+  'Mexiko-Stadt','Buenos Aires','Havanna','Kairo','Athen','Istanbul',
+  'Rom','Paris','London','Berlin','Seoul','Ho-Chi-Minh-Stadt','Krakau',
+  'Belgrad','Tiflis','Mallorca','Teneriffa','Gran Canaria','Dubrovnik',
+  'Lanzarote','Hurghada','Sharm el-Sheikh','Antalya','Peking','Shanghai',
+];
 
 const interests = [
   { id: 'kultur', label: '🏛️ Kultur' },
@@ -21,6 +32,8 @@ const hotelOptions = [
 
 export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error, onBack }) {
   const isMobile = useIsMobile();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const destRef = useRef(null);
   const [form, setForm] = useState({
     destination: defaultDestination || '',
     departureCity: '',
@@ -44,9 +57,14 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     interests: f.interests.includes(id) ? f.interests.filter(x => x !== id) : [...f.interests, id],
   }));
 
+  const suggestions = form.destination.length >= 2
+    ? TOP_CITIES.filter(c => c.toLowerCase().startsWith(form.destination.toLowerCase())).slice(0, 5)
+    : [];
+
   const submit = (e) => {
     e.preventDefault();
     if (!form.destination.trim() || isLoading) return;
+    setShowSuggestions(false);
     onGenerate({ ...form, destination: form.destination.trim() });
   };
 
@@ -79,22 +97,22 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Destination — big & prominent */}
+          <div ref={destRef} style={{ position: 'relative' }}>
           <div style={{
             background: '#fff', borderRadius: 20,
             padding: '6px 8px 6px 20px',
             boxShadow: '0 2px 20px rgba(37,99,235,0.1)',
             display: 'flex', alignItems: 'center', gap: 12,
-            border: '2px solid transparent',
+            border: `2px solid ${showSuggestions && suggestions.length ? '#2563eb' : 'transparent'}`,
             transition: 'border-color 0.2s',
-          }}
-            onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
-            onBlurCapture={e => e.currentTarget.style.borderColor = 'transparent'}
-          >
+          }}>
             <span style={{ fontSize: 20 }}>✈️</span>
             <input
               type="text"
               value={form.destination}
-              onChange={e => setForm(f => ({ ...f, destination: e.target.value }))}
+              onChange={e => { setForm(f => ({ ...f, destination: e.target.value })); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Stadt, Land oder Region eingeben…"
               required
               style={{
@@ -117,6 +135,40 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 ? <><span style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }}>⟳</span> Planen…</>
                 : <>Plan erstellen ✨</>}
             </button>
+          </div>
+
+          {/* Autocomplete Suggestions */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0,
+              background: '#fff', borderRadius: 16, marginTop: 6,
+              boxShadow: '0 8px 32px rgba(37,99,235,0.15)',
+              border: '1.5px solid #e0eaff',
+              zIndex: 200, overflow: 'hidden',
+            }}>
+              {suggestions.map(city => (
+                <button
+                  key={city}
+                  type="button"
+                  onMouseDown={() => {
+                    setForm(f => ({ ...f, destination: city }));
+                    setShowSuggestions(false);
+                  }}
+                  style={{
+                    width: '100%', textAlign: 'left', background: 'none',
+                    border: 'none', padding: '12px 20px', cursor: 'pointer',
+                    fontSize: 15, fontWeight: 600, color: '#0f172a',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#eff6ff'}
+                  onMouseOut={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ fontSize: 18 }}>📍</span> {city}
+                </button>
+              ))}
+            </div>
+          )}
           </div>
 
           {/* Departure City */}

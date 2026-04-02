@@ -18,6 +18,11 @@ function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
+  // Badge-Count sofort aktualisieren wenn sich favs ändern
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('favoritesCountChanged', { detail: favs.length }));
+  }, [favs]);
+
   const remove = (destination) => {
     const updated = favs.filter(f => f.destination !== destination);
     localStorage.setItem('tripai_favorites', JSON.stringify(updated));
@@ -145,12 +150,15 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
         setFavCount(JSON.parse(localStorage.getItem('tripai_favorites') || '[]').length);
       } catch { setFavCount(0); }
     };
+    const handleCount = (e) => setFavCount(e.detail);
     update();
     window.addEventListener('storage', update);
     window.addEventListener('favoritesUpdated', update);
+    window.addEventListener('favoritesCountChanged', handleCount);
     return () => {
       window.removeEventListener('storage', update);
       window.removeEventListener('favoritesUpdated', update);
+      window.removeEventListener('favoritesCountChanged', handleCount);
     };
   }, []);
 
