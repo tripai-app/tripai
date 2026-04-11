@@ -30,6 +30,22 @@
   </script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wann ist die beste Reisezeit für New York?","acceptedAnswer":{"@type":"Answer","text":"April bis Juni und September bis November sind ideal: angenehme 15–25°C, alle Outdoor-Events aktiv. Dezember ist trotz Kälte magisch wegen Weihnachtsdekorationen und Eisbahn im Central Park."}},{"@type":"Question","name":"Brauche ich ein ESTA für New York?","acceptedAnswer":{"@type":"Answer","text":"Kein Visum nötig, aber ein ESTA (21 USD, online beantragen) ist Pflicht für alle Deutschen. Gilt 2 Jahre für beliebig viele Reisen. Ohne gültiges ESTA kein Boarding erlaubt!"}},{"@type":"Question","name":"Wie teuer ist New York wirklich?","acceptedAnswer":{"@type":"Answer","text":"New York ist teuer: Hotel in Manhattan ab 150€/Nacht. Aber viele kostenlose Highlights (High Line, Central Park, Brooklyn Bridge, Staten Island Ferry) und Essen in Delis ab 10€."}},{"@type":"Question","name":"Welche Stadtteile sind am besten für Touristen?","acceptedAnswer":{"@type":"Answer","text":"Midtown für Sehenswürdigkeiten, Lower Manhattan für Geschichte, Brooklyn für hippes Flair. In Brooklyn oder Queens übernachten ist oft 40% günstiger als Manhattan."}}]}</script>
   <style>* { box-sizing: border-box; } @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr !important; } .sidebar { position: static !important; } .budget-grid { grid-template-columns: 1fr !important; } .practical-grid { grid-template-columns: 1fr !important; } }</style>
+  <style>
+    details { background:#fff; border-radius:14px; border:1px solid #e2e8f0; overflow:hidden; transition:box-shadow 0.2s; }
+    details:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+    details summary { padding:18px 20px; font-weight:700; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; color:#0f172a; font-size:15px; user-select:none; }
+    details summary::-webkit-details-marker { display:none; }
+    details summary::after { content:'＋'; font-size:16px; color:#94a3b8; flex-shrink:0; }
+    details[open] summary::after { content:'−'; color:#2563eb; }
+    details[open] summary { color:#2563eb; }
+    .faq-answer { padding:0 20px 18px; font-size:14px; color:#64748b; line-height:1.75; margin:0; }
+    .breadcrumb-bar { background:#fff; border-bottom:1px solid #f1f5f9; }
+    .breadcrumb-bar ol { list-style:none; margin:0 auto; padding:10px 20px; display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8; max-width:1100px; }
+    .breadcrumb-bar a { color:#2563eb; text-decoration:none; }
+    .cta-strip { background:linear-gradient(135deg,#1e40af,#2563eb); }
+    .cta-strip-inner { max-width:1100px; margin:0 auto; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+    @media (max-width:600px) { .cta-strip-inner { flex-direction:column; text-align:center; } }
+  </style>
 </head>
 <body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#334155;">
 
@@ -61,6 +77,24 @@
     </div>
   </div>
 
+  <div class="breadcrumb-bar">
+    <ol>
+      <li><a href="/">🏠 TripAI</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li><a href="/reise/">Reiseziele</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li style="color:#334155;font-weight:600;">New York</li>
+    </ol>
+  </div>
+  <div class="cta-strip">
+    <div class="cta-strip-inner">
+      <div>
+        <span style="color:#fff;font-weight:800;font-size:15px;">🤖 KI-Reiseplan für New York — in 30 Sekunden, kostenlos</span>
+        <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:3px 0 0;">Personalisiert nach deinem Budget · Keine Anmeldung nötig</p>
+      </div>
+      <a href="/?dest=New%20York" style="background:#fff;color:#1e40af;text-decoration:none;border-radius:50px;padding:11px 28px;font-weight:800;font-size:14px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.15);">✨ Jetzt planen →</a>
+    </div>
+  </div>
   <div style="max-width:1100px;margin:0 auto;padding:40px 20px 60px;">
     <div class="main-grid" style="display:grid;grid-template-columns:1fr min(320px,35%);gap:32px;align-items:start;">
       <div>
@@ -283,6 +317,33 @@
     </div>
   </div>
 
+  <section style="background:#f8fafc;padding:60px 20px;">
+    <div style="max-width:780px;margin:0 auto;">
+      <h2 style="font-size:26px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;margin:0 0 8px;text-align:center;">❓ Häufige Fragen zu New York</h2>
+      <p style="color:#64748b;text-align:center;font-size:15px;margin:0 0 32px;">Alles was du vor deiner Reise wissen musst</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <details>
+          <summary>Wann ist die beste Reisezeit für New York?</summary>
+          <p class="faq-answer">September bis November ist ideal: angenehme 15–22°C, weniger Touristen als im Sommer, spektakuläres Herbstlaub im Central Park. April/Mai als zweite Wahl. Sommer ist heiß und schwül, Winter kalt — aber mit einzigartigem Weihnachtsfeeling.</p>
+        </details>
+        <details>
+          <summary>Wie viel kostet eine Woche New York?</summary>
+          <p class="faq-answer">New York ist teuer: Budget ab 900€ (Hostel-Dorm + Subway + günstiges Essen). Komfortabel mit Doppelzimmer und Restaurants: 1.800–3.000€. Tipp: Mittagsmenüs sind günstiger als Abendessen. Pizza by the Slice ist günstig und gut.</p>
+        </details>
+        <details>
+          <summary>Brauche ich ein Visum (ESTA) für die USA?</summary>
+          <p class="faq-answer">Deutsche benötigen eine ESTA-Genehmigung (21 US-Dollar, online unter esta.cbp.dhs.gov). Mindestens 72 Stunden vor Abflug beantragen. ESTA ist 2 Jahre gültig. Ohne ESTA keine Einreise — Bordingkarten werden erst nach ESTA-Bestätigung ausgestellt.</p>
+        </details>
+        <details>
+          <summary>Wie komme ich vom Flughafen in die Stadt?</summary>
+          <p class="faq-answer">AirTrain + Subway ab JFK: ca. 9 USD (günstigste Option, ~75 Min). Ab Newark: NJ Transit Express Train ~15 USD. Taxi/Uber ab JFK: 70–90 USD Pauschalpreis. Für Gepäck und Gruppen lohnt sich der Taxi-Flatrate-Deal.</p>
+        </details>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="/?dest=New%20York" style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;text-decoration:none;border-radius:50px;padding:14px 36px;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 20px rgba(37,99,235,0.3);">🤖 KI-Reiseplan für New York erstellen</a>
+      </div>
+    </div>
+  </section>
   <footer style="background:#0f172a;color:rgba(255,255,255,0.6);text-align:center;padding:24px 20px;font-size:13px;">
     <div style="margin-bottom:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;">
       <a href="/" style="color:rgba(255,255,255,0.7);text-decoration:none;margin:0 8px;">🏠 Startseite</a>

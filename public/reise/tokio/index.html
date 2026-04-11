@@ -38,6 +38,22 @@
       .practical-grid { grid-template-columns: 1fr !important; }
     }
   </style>
+  <style>
+    details { background:#fff; border-radius:14px; border:1px solid #e2e8f0; overflow:hidden; transition:box-shadow 0.2s; }
+    details:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+    details summary { padding:18px 20px; font-weight:700; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; color:#0f172a; font-size:15px; user-select:none; }
+    details summary::-webkit-details-marker { display:none; }
+    details summary::after { content:'＋'; font-size:16px; color:#94a3b8; flex-shrink:0; }
+    details[open] summary::after { content:'−'; color:#2563eb; }
+    details[open] summary { color:#2563eb; }
+    .faq-answer { padding:0 20px 18px; font-size:14px; color:#64748b; line-height:1.75; margin:0; }
+    .breadcrumb-bar { background:#fff; border-bottom:1px solid #f1f5f9; }
+    .breadcrumb-bar ol { list-style:none; margin:0 auto; padding:10px 20px; display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8; max-width:1100px; }
+    .breadcrumb-bar a { color:#2563eb; text-decoration:none; }
+    .cta-strip { background:linear-gradient(135deg,#1e40af,#2563eb); }
+    .cta-strip-inner { max-width:1100px; margin:0 auto; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+    @media (max-width:600px) { .cta-strip-inner { flex-direction:column; text-align:center; } }
+  </style>
 </head>
 <body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#334155;">
 
@@ -74,6 +90,24 @@
     </div>
   </div>
 
+  <div class="breadcrumb-bar">
+    <ol>
+      <li><a href="/">🏠 TripAI</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li><a href="/reise/">Reiseziele</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li style="color:#334155;font-weight:600;">Tokio</li>
+    </ol>
+  </div>
+  <div class="cta-strip">
+    <div class="cta-strip-inner">
+      <div>
+        <span style="color:#fff;font-weight:800;font-size:15px;">🤖 KI-Reiseplan für Tokio — in 30 Sekunden, kostenlos</span>
+        <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:3px 0 0;">Personalisiert nach deinem Budget · Keine Anmeldung nötig</p>
+      </div>
+      <a href="/?dest=Tokio" style="background:#fff;color:#1e40af;text-decoration:none;border-radius:50px;padding:11px 28px;font-weight:800;font-size:14px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.15);">✨ Jetzt planen →</a>
+    </div>
+  </div>
   <div style="max-width:1100px;margin:0 auto;padding:40px 20px 60px;">
     <div class="main-grid" style="display:grid;grid-template-columns:1fr min(320px,35%);gap:32px;align-items:start;">
 
@@ -330,6 +364,33 @@
     </div>
   </div>
 
+  <section style="background:#f8fafc;padding:60px 20px;">
+    <div style="max-width:780px;margin:0 auto;">
+      <h2 style="font-size:26px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;margin:0 0 8px;text-align:center;">❓ Häufige Fragen zu Tokio</h2>
+      <p style="color:#64748b;text-align:center;font-size:15px;margin:0 0 32px;">Alles was du vor deiner Reise wissen musst</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <details>
+          <summary>Wann ist die beste Reisezeit für Tokio?</summary>
+          <p class="faq-answer">März/April (Kirschblüte) und Oktober/November (Herbstlaub) sind absolute Highlights — aber auch überfüllt. Für Ruhe und günstigere Preise: Januar/Februar (kalt, aber sonnig) oder September (nach der Regenzeit, angenehm warm).</p>
+        </details>
+        <details>
+          <summary>Wie viel kostet eine Woche Tokio?</summary>
+          <p class="faq-answer">Budget-Reisende kommen mit 700–900€ aus (Capsule Hotel + Konbini-Essen + JR-Pass). Mittelklasse mit gutem Hotel und Restaurantbesuchen: 1.400–2.000€. Tokio ist teurer als Südostasien, aber günstiger als viele europäische Städte.</p>
+        </details>
+        <details>
+          <summary>Brauche ich ein Visum für Japan?</summary>
+          <p class="faq-answer">Deutsche erhalten ein kostenloses 90-Tage-Visum bei Einreise — kein Vorausstellen nötig. Pass muss bei Einreise mindestens 6 Monate gültig sein. Seit 2024 gibt es bei hohem Andrang Wartezeiten an der Einreisekontrolle, also früh einplanen.</p>
+        </details>
+        <details>
+          <summary>Kann ich in Japan mit Karte zahlen?</summary>
+          <p class="faq-answer">Bargeld ist noch König in Japan! Viele kleine Restaurants, Tempel und lokale Läden akzeptieren nur Cash. Immer Yen dabei haben — Geldautomaten bei 7-Eleven und Japan Post funktionieren zuverlässig mit europäischen Karten.</p>
+        </details>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="/?dest=Tokio" style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;text-decoration:none;border-radius:50px;padding:14px 36px;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 20px rgba(37,99,235,0.3);">🤖 KI-Reiseplan für Tokio erstellen</a>
+      </div>
+    </div>
+  </section>
   <footer style="background:#0f172a;color:rgba(255,255,255,0.6);text-align:center;padding:24px 20px;font-size:13px;">
     <div style="margin-bottom:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px;">
       <a href="/" style="color:rgba(255,255,255,0.7);text-decoration:none;margin:0 8px;">🏠 Startseite</a>

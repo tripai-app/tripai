@@ -16,6 +16,22 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"TouristDestination","name":"Lissabon","description":"Portugals Hauptstadt auf sieben Hügeln — Fado, Azulejos und günstigste Metropole Westeuropas","url":"https://tripai-omega.vercel.app/reise/lissabon/","includesAttraction":[{"@type":"TouristAttraction","name":"Alfama"},{"@type":"TouristAttraction","name":"Jerónimos-Kloster"},{"@type":"TouristAttraction","name":"Torre de Belém"}]}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wann ist die beste Reisezeit für Lissabon?","acceptedAnswer":{"@type":"Answer","text":"April bis Juni und September bis Oktober sind ideal: 20–26°C, Terrassen voll. September/Oktober ist der Geheimtipp: ausgezeichnetes Wetter, weniger Touristen, günstigere Preise."}},{"@type":"Question","name":"Wie teuer ist Lissabon?","acceptedAnswer":{"@type":"Answer","text":"Westeuropas günstigste Hauptstadt: Mittagsmenü (3-gängig) ab 9€, Glas Wein ab 2€, Tram 3,10€. Boutique-Hotel ab 60€/Nacht. Im Vergleich zu Paris oder London 40–50% günstiger."}},{"@type":"Question","name":"Ist Sintra ein Tagesausflug wert?","acceptedAnswer":{"@type":"Answer","text":"Absolut — Sintra ist UNESCO-Weltkulturerbe mit dem bunten Pena-Palast. Zug ab Rossio (30 Min., 2,25€). Tickets für Pena-Palast unbedingt vorab online buchen!"}},{"@type":"Question","name":"Was ist die Lisboa Card?","acceptedAnswer":{"@type":"Answer","text":"Die Lisboa Card (24h/16€, 48h/27€, 72h/34€) inkludiert alle Verkehrsmittel und über 25 Museen. Lohnt sich ab 3 Museenbesuchen + Transport."}}]}</script>
   <style>* { box-sizing: border-box; } @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr !important; } .sidebar { position: static !important; } .budget-grid { grid-template-columns: 1fr !important; } .practical-grid { grid-template-columns: 1fr !important; } .destinations-grid { grid-template-columns: repeat(2, 1fr) !important; } }</style>
+  <style>
+    details { background:#fff; border-radius:14px; border:1px solid #e2e8f0; overflow:hidden; transition:box-shadow 0.2s; }
+    details:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+    details summary { padding:18px 20px; font-weight:700; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; color:#0f172a; font-size:15px; user-select:none; }
+    details summary::-webkit-details-marker { display:none; }
+    details summary::after { content:'＋'; font-size:16px; color:#94a3b8; flex-shrink:0; }
+    details[open] summary::after { content:'−'; color:#2563eb; }
+    details[open] summary { color:#2563eb; }
+    .faq-answer { padding:0 20px 18px; font-size:14px; color:#64748b; line-height:1.75; margin:0; }
+    .breadcrumb-bar { background:#fff; border-bottom:1px solid #f1f5f9; }
+    .breadcrumb-bar ol { list-style:none; margin:0 auto; padding:10px 20px; display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8; max-width:1100px; }
+    .breadcrumb-bar a { color:#2563eb; text-decoration:none; }
+    .cta-strip { background:linear-gradient(135deg,#1e40af,#2563eb); }
+    .cta-strip-inner { max-width:1100px; margin:0 auto; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+    @media (max-width:600px) { .cta-strip-inner { flex-direction:column; text-align:center; } }
+  </style>
 </head>
 <body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#334155;">
   <nav style="background:rgba(255,255,255,0.95);border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);">
@@ -46,6 +62,24 @@
     </div>
   </div>
 
+  <div class="breadcrumb-bar">
+    <ol>
+      <li><a href="/">🏠 TripAI</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li><a href="/reise/">Reiseziele</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li style="color:#334155;font-weight:600;">Lissabon</li>
+    </ol>
+  </div>
+  <div class="cta-strip">
+    <div class="cta-strip-inner">
+      <div>
+        <span style="color:#fff;font-weight:800;font-size:15px;">🤖 KI-Reiseplan für Lissabon — in 30 Sekunden, kostenlos</span>
+        <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:3px 0 0;">Personalisiert nach deinem Budget · Keine Anmeldung nötig</p>
+      </div>
+      <a href="/?dest=Lissabon" style="background:#fff;color:#1e40af;text-decoration:none;border-radius:50px;padding:11px 28px;font-weight:800;font-size:14px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.15);">✨ Jetzt planen →</a>
+    </div>
+  </div>
   <div style="max-width:1100px;margin:0 auto;padding:40px 20px 60px;">
     <div class="main-grid" style="display:grid;grid-template-columns:1fr min(320px,35%);gap:32px;align-items:start;">
       <div>
@@ -151,6 +185,33 @@
     </div>
   </div>
 
+  <section style="background:#f8fafc;padding:60px 20px;">
+    <div style="max-width:780px;margin:0 auto;">
+      <h2 style="font-size:26px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;margin:0 0 8px;text-align:center;">❓ Häufige Fragen zu Lissabon</h2>
+      <p style="color:#64748b;text-align:center;font-size:15px;margin:0 0 32px;">Alles was du vor deiner Reise wissen musst</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <details>
+          <summary>Wann ist die beste Reisezeit für Lissabon?</summary>
+          <p class="faq-answer">März bis Mai und September bis November sind ideal: angenehme 18–25°C, blaues Licht, wenig Touristen. Sommer (Juni–August) ist heiß (35°C+) und überfüllt — Unterkunft sehr teuer. Winter ist mild (12°C) aber regnerisch, dafür günstig und ruhig.</p>
+        </details>
+        <details>
+          <summary>Was ist Fado und wo höre ich ihn?</summary>
+          <p class="faq-answer">Fado ist die melancholische Volksmusik Portugals — Seele, Schmerz und Sehnsucht (Saudade). Bestes Viertel: Alfama. Authentische Fado-Häuser findest du in der Bica und Mouraria, meist ab 21 Uhr. Eintritt ab 15€, oft mit Petisco (kleinen Speisen) kombiniert.</p>
+        </details>
+        <details>
+          <summary>Wie viel kostet eine Woche Lissabon?</summary>
+          <p class="faq-answer">Lissabon ist eine der günstigsten westeuropäischen Hauptstädte: Budget ab 450€ (Hostel, Pastéis de Nata, Vinho Verde). Mittelklasse mit gutem Hotel und Restaurants: 800–1.200€. Tipp: Zeitkarte für Tram + Metro (40€/Woche) spart viel.</p>
+        </details>
+        <details>
+          <summary>Wie nutze ich die berühmte Straßenbahn 28?</summary>
+          <p class="faq-answer">Die Linie 28 fährt durch Alfama — malerisch, aber extrem voll mit Touristen. Tickets (3€) am Automaten oder per App kaufen. Taschendiebe in der 28 sind berüchtigt — Wertsachen sichern, Rucksack vorne tragen. Früh morgens (vor 9 Uhr) ist die Tram noch angenehm leer.</p>
+        </details>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="/?dest=Lissabon" style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;text-decoration:none;border-radius:50px;padding:14px 36px;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 20px rgba(37,99,235,0.3);">🤖 KI-Reiseplan für Lissabon erstellen</a>
+      </div>
+    </div>
+  </section>
   <footer style="background:#0f172a;color:rgba(255,255,255,0.6);text-align:center;padding:24px 20px;font-size:13px;">
     <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;">
       <a href="/" style="color:rgba(255,255,255,0.7);text-decoration:none;">🏠 Startseite</a>

@@ -16,6 +16,22 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"TouristDestination","name":"Rom","description":"Die Ewige Stadt — 2800 Jahre Geschichte, Weltklasse-Kunst und die beste Pasta der Welt","url":"https://tripai-omega.vercel.app/reise/rom/","includesAttraction":[{"@type":"TouristAttraction","name":"Kolosseum"},{"@type":"TouristAttraction","name":"Vatikan"},{"@type":"TouristAttraction","name":"Trevi-Brunnen"}]}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Wann ist die beste Reisezeit für Rom?","acceptedAnswer":{"@type":"Answer","text":"April bis Juni und September bis Oktober: 20–28°C, Terrassen-Leben auf dem Höhepunkt. Dezember bis Februar: kühl, aber viel weniger Touristen — Kolosseum und Vatikan ohne lange Wartezeiten."}},{"@type":"Question","name":"Muss ich Kolosseum und Vatikan vorbuchen?","acceptedAnswer":{"@type":"Answer","text":"Ja, unbedingt! Kolosseum auf coopculture.it (16€), Vatikanische Museen auf museivaticani.va (17€). Ohne Ticket: 2–4 Stunden Warteschlange. Borghese Galerie erfordert Pflicht-Voranmeldung."}},{"@type":"Question","name":"Was kostet echte Pizza und Pasta in Rom?","acceptedAnswer":{"@type":"Answer","text":"Touristviertel: 15–20€ für Pasta. Wer 200m vom Touristenstrom abbiegt findet Trattorien für 8–12€. Mittags-Menü (Primo + Secondo + Wein) für 12–15€ ist der beste Deal."}},{"@type":"Question","name":"Was ist der Dresscode für den Vatikan?","acceptedAnswer":{"@type":"Answer","text":"Knie und Schultern bedeckt — gilt für Männer und Frauen! Wer ohne geeignete Kleidung kommt wird abgewiesen. Leichtes Tuch im Rucksack für spontane Kirchenbesuche immer mitführen."}}]}</script>
   <style>* { box-sizing: border-box; } @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr !important; } .sidebar { position: static !important; } .budget-grid { grid-template-columns: 1fr !important; } .practical-grid { grid-template-columns: 1fr !important; } .destinations-grid { grid-template-columns: repeat(2, 1fr) !important; } }</style>
+  <style>
+    details { background:#fff; border-radius:14px; border:1px solid #e2e8f0; overflow:hidden; transition:box-shadow 0.2s; }
+    details:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+    details summary { padding:18px 20px; font-weight:700; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; color:#0f172a; font-size:15px; user-select:none; }
+    details summary::-webkit-details-marker { display:none; }
+    details summary::after { content:'＋'; font-size:16px; color:#94a3b8; flex-shrink:0; }
+    details[open] summary::after { content:'−'; color:#2563eb; }
+    details[open] summary { color:#2563eb; }
+    .faq-answer { padding:0 20px 18px; font-size:14px; color:#64748b; line-height:1.75; margin:0; }
+    .breadcrumb-bar { background:#fff; border-bottom:1px solid #f1f5f9; }
+    .breadcrumb-bar ol { list-style:none; margin:0 auto; padding:10px 20px; display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8; max-width:1100px; }
+    .breadcrumb-bar a { color:#2563eb; text-decoration:none; }
+    .cta-strip { background:linear-gradient(135deg,#1e40af,#2563eb); }
+    .cta-strip-inner { max-width:1100px; margin:0 auto; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+    @media (max-width:600px) { .cta-strip-inner { flex-direction:column; text-align:center; } }
+  </style>
 </head>
 <body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#334155;">
   <nav style="background:rgba(255,255,255,0.95);border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);">
@@ -46,6 +62,24 @@
     </div>
   </div>
 
+  <div class="breadcrumb-bar">
+    <ol>
+      <li><a href="/">🏠 TripAI</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li><a href="/reise/">Reiseziele</a></li>
+      <li style="color:#cbd5e1;">›</li>
+      <li style="color:#334155;font-weight:600;">Rom</li>
+    </ol>
+  </div>
+  <div class="cta-strip">
+    <div class="cta-strip-inner">
+      <div>
+        <span style="color:#fff;font-weight:800;font-size:15px;">🤖 KI-Reiseplan für Rom — in 30 Sekunden, kostenlos</span>
+        <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:3px 0 0;">Personalisiert nach deinem Budget · Keine Anmeldung nötig</p>
+      </div>
+      <a href="/?dest=Rom" style="background:#fff;color:#1e40af;text-decoration:none;border-radius:50px;padding:11px 28px;font-weight:800;font-size:14px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.15);">✨ Jetzt planen →</a>
+    </div>
+  </div>
   <div style="max-width:1100px;margin:0 auto;padding:40px 20px 60px;">
     <div class="main-grid" style="display:grid;grid-template-columns:1fr min(320px,35%);gap:32px;align-items:start;">
       <div>
@@ -151,6 +185,33 @@
     </div>
   </div>
 
+  <section style="background:#f8fafc;padding:60px 20px;">
+    <div style="max-width:780px;margin:0 auto;">
+      <h2 style="font-size:26px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;margin:0 0 8px;text-align:center;">❓ Häufige Fragen zu Rom</h2>
+      <p style="color:#64748b;text-align:center;font-size:15px;margin:0 0 32px;">Alles was du vor deiner Reise wissen musst</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <details>
+          <summary>Wann ist die beste Reisezeit für Rom?</summary>
+          <p class="faq-answer">April bis Juni und September bis Oktober: angenehme 20–26°C, ideales Wetter für Sightseeing. Juli/August ist brutal heiß (35–40°C) und überfüllt. November bis März ist ruhig, mild (10–15°C) und deutlich günstiger — perfekt für Städtetrips ohne Massen.</p>
+        </details>
+        <details>
+          <summary>Muss ich Kolosseum und Vatikan vorbuchen?</summary>
+          <p class="faq-answer">PFLICHT! Kolosseum + Forum Romanum (16–22€) und Vatikanische Museen + Sixtinische Kapelle (17–21€) immer online vorbuchen. Warteschlangen ohne Reservierung: 2–4 Stunden. Vatikan: Früh morgens (Öffnung 9 Uhr) oder nachmittags ruhiger. Freitagabend bis 22 Uhr ist besonders stimmungsvoll.</p>
+        </details>
+        <details>
+          <summary>Was kostet Essen in Rom?</summary>
+          <p class="faq-answer">In Touristenfallen am Kolosseum oder Pantheon: 15–25€ für Pasta. In echten Osterien abseits der Sehenswürdigkeiten: 8–12€. Mittagsmenü (Menù del giorno): 10–14€ mit Primo, Secondo und Wasser. Tipp: Pizzeria al taglio (Pizza vom Blech) für 3–5€ ist schnell und gut.</p>
+        </details>
+        <details>
+          <summary>Was muss ich im Vatikan beachten?</summary>
+          <p class="faq-answer">Dresscode ist Pflicht: bedeckte Schultern und Knie für alle Geschlechter — sonst wird man abgewiesen. Kurze Hosen und Träger-Tops nicht erlaubt. Am Eingang werden Schultertücher ausgegeben. Fotografieren in der Sixtinischen Kapelle ist verboten (wird durchgesetzt).</p>
+        </details>
+      </div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="/?dest=Rom" style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;text-decoration:none;border-radius:50px;padding:14px 36px;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 20px rgba(37,99,235,0.3);">🤖 KI-Reiseplan für Rom erstellen</a>
+      </div>
+    </div>
+  </section>
   <footer style="background:#0f172a;color:rgba(255,255,255,0.6);text-align:center;padding:24px 20px;font-size:13px;">
     <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;">
       <a href="/" style="color:rgba(255,255,255,0.7);text-decoration:none;">🏠 Startseite</a>
