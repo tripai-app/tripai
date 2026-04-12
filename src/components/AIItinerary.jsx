@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import AffiliateSection from './AffiliateSection';
 import { getAmazonLink } from '../data/affiliateConfig';
 import useIsMobile from '../hooks/useIsMobile';
@@ -467,7 +467,6 @@ function DayCard({ day, destination }) {
 export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegenerate, onRegenerateWithBudget }) {
   const isMobile = useIsMobile();
   const [toast, setToast] = useState('');
-  const [imgFailed, setImgFailed] = useState(false);
 
   // Animierte Budget-Zahlen
   const animTotal = useCountUp(plan?.costs?.gesamt || 0);
@@ -539,19 +538,11 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
 
       {/* HEADER */}
       <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-        {imgFailed ? (
-          <div style={{ width: '100%', height: 220, background: 'linear-gradient(135deg,#1e3a5f 0%,#2563eb 60%,#0ea5e9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 80, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }}>{plan.emoji || '✈️'}</span>
-          </div>
-        ) : (
-          <img
-            src={`https://source.unsplash.com/featured/1400x500?${encodeURIComponent(plan.destination + ' travel city')}`}
-            alt={plan.destination}
-            loading="lazy"
-            onError={() => setImgFailed(true)}
-            style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }}
-          />
-        )}
+        <div style={{ width: '100%', height: 220, background: 'linear-gradient(135deg,#1e3a5f 0%,#1a3580 40%,#2563eb 75%,#0ea5e9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-30%', right: '-10%', width: 400, height: 400, borderRadius: '50%', background: 'rgba(14,165,233,0.15)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-20%', left: '-5%', width: 300, height: 300, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', pointerEvents: 'none' }} />
+          <span style={{ fontSize: 90, filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.35))', position: 'relative', zIndex: 1 }}>{plan.emoji || '✈️'}</span>
+        </div>
         <div style={{ padding: '20px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -677,14 +668,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{h.name} {'⭐'.repeat(Math.min(h.stars || 3, 5))}</div>
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>📍 {h.location}</div>
                         {h.highlight && <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>{h.highlight}</div>}
-                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' ' + plan.destination + ' hotel')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 3, textDecoration: 'none', fontWeight: 600 }}>🗺️ In Maps öffnen</a>
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' Hotel ' + plan.destination)}`}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 11, color: '#2563eb', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none', fontWeight: 600 }}
-                        >
-                          🗺️ In Maps öffnen
-                        </a>
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ' Hotel ' + plan.destination)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 3, textDecoration: 'none', fontWeight: 600 }}>🗺️ In Maps öffnen</a>
                       </div>
                       <div style={{ textAlign: 'right', marginLeft: 12, flexShrink: 0 }}>
                         <div style={{ fontSize: 10, color: '#94a3b8' }}>ab</div>
@@ -705,7 +689,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               const prevCity = i > 0 ? plan.days[i - 1].city : null;
               const cityChanged = day.city && prevCity && day.city !== prevCity;
               return (
-                <React.Fragment key={i}>
+                <Fragment key={i}>
                   {cityChanged && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', margin: '4px 0' }}>
                       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
@@ -716,7 +700,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                     </div>
                   )}
                   <DayCard day={day} destination={plan.isRoundtrip && day.city ? day.city : plan.destination} />
-                </React.Fragment>
+                </Fragment>
               );
             })}
 
