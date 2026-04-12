@@ -385,23 +385,25 @@ const TYPE_ICONS = {
   nachtleben: '🎉',
 };
 
-function Slot({ slot, isLast, destination }) {
+function Slot({ slot, isLast, destination, checked, onToggle }) {
   const icon = TYPE_ICONS[slot.type] || '📍';
   return (
-    <div style={{ display: 'flex', gap: 16, paddingBottom: isLast ? 0 : 22 }}>
+    <div style={{ display: 'flex', gap: 16, paddingBottom: isLast ? 0 : 22, opacity: checked ? 0.45 : 1, transition: 'opacity 0.2s' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 44, flexShrink: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 5, whiteSpace: 'nowrap' }}>{slot.time}</div>
-        <div style={{
+        <button onClick={onToggle} title={checked ? 'Als unerledigt markieren' : 'Abhaken'} style={{
           width: 34, height: 34, borderRadius: '50%',
-          background: '#eff6ff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0,
-        }}>{icon}</div>
+          background: checked ? '#dcfce7' : '#eff6ff',
+          border: `2px solid ${checked ? '#16a34a' : 'transparent'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: checked ? 15 : 15, flexShrink: 0, cursor: 'pointer', transition: 'all 0.2s',
+        }}>{checked ? '✓' : icon}</button>
         {!isLast && <div style={{ width: 1, flex: 1, background: '#e2e8f0', marginTop: 6 }} />}
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>{slot.name}</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', textDecoration: checked ? 'line-through' : 'none' }}>{slot.name}</span>
             {slot.tiktokWorthy && (
               <span style={{ background: '#000', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 20, letterSpacing: '0.3px' }}>TikTok</span>
             )}
@@ -442,7 +444,9 @@ function Slot({ slot, isLast, destination }) {
   );
 }
 
-function DayCard({ day, destination }) {
+function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
+  const doneCount = day.slots?.filter((_, i) => checkedSlots?.[`${dayIdx}_${i}`]).length || 0;
+  const totalCount = day.slots?.length || 0;
   return (
     <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 2px 16px rgba(0,0,0,0.05)', marginBottom: 14, overflow: 'hidden' }}>
       <div style={{ padding: '18px 24px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
@@ -451,14 +455,27 @@ function DayCard({ day, destination }) {
           <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{day.title}</div>
           {day.theme && <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{day.theme}</div>}
         </div>
-        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
-          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 1 }}>Kosten</div>
-          <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a' }}>~{day.dailyCostEstimate}€</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <div style={{ background: '#f8fafc', borderRadius: 12, padding: '8px 14px', textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 1 }}>Kosten</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a' }}>~{day.dailyCostEstimate}€</div>
+          </div>
+          {totalCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 48, height: 4, background: '#e2e8f0', borderRadius: 99 }}>
+                <div style={{ height: '100%', width: `${(doneCount/totalCount)*100}%`, background: '#22c55e', borderRadius: 99, transition: 'width 0.3s' }} />
+              </div>
+              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{doneCount}/{totalCount}</span>
+            </div>
+          )}
         </div>
       </div>
       <div style={{ padding: '20px 24px' }}>
         {day.slots?.map((slot, i) => (
-          <Slot key={i} slot={slot} isLast={i === day.slots.length - 1} destination={destination} />
+          <Slot key={i} slot={slot} isLast={i === day.slots.length - 1} destination={destination}
+            checked={!!checkedSlots?.[`${dayIdx}_${i}`]}
+            onToggle={() => onToggleSlot?.(dayIdx, i)}
+          />
         ))}
       </div>
       {day.hiddenGem && (
@@ -477,6 +494,15 @@ function DayCard({ day, destination }) {
 export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegenerate, onRegenerateWithBudget }) {
   const isMobile = useIsMobile();
   const [toast, setToast] = useState('');
+  const [activeDay, setActiveDay] = useState(0);
+  const [checkedSlots, setCheckedSlots] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`tripai_checked_${plan?.destination}_${plan?.days?.length}`) || '{}'); } catch { return {}; }
+  });
+  const [showQr, setShowQr] = useState(false);
+  const [expenses, setExpenses] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`tripai_expenses_${plan?.destination}`) || '[]'); } catch { return []; }
+  });
+  const [expInput, setExpInput] = useState({ name: '', amount: '' });
 
   // Animierte Budget-Zahlen
   const animTotal = useCountUp(plan?.costs?.gesamt || 0);
@@ -506,6 +532,56 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2500);
+  };
+
+  const toggleSlot = (dayIdx, slotIdx) => {
+    const key = `${dayIdx}_${slotIdx}`;
+    setCheckedSlots(prev => {
+      const updated = { ...prev };
+      if (updated[key]) delete updated[key]; else updated[key] = true;
+      try { localStorage.setItem(`tripai_checked_${plan.destination}_${plan.days?.length}`, JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+  const checkedCount = Object.keys(checkedSlots).length;
+  const totalSlots = plan.days?.reduce((s, d) => s + (d.slots?.length || 0), 0) || 0;
+
+  const expTotal = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const addExpense = () => {
+    if (!expInput.name.trim() || !expInput.amount) return;
+    const updated = [...expenses, { name: expInput.name.trim(), amount: parseFloat(expInput.amount), id: Date.now() }];
+    setExpenses(updated);
+    setExpInput({ name: '', amount: '' });
+    try { localStorage.setItem(`tripai_expenses_${plan.destination}`, JSON.stringify(updated)); } catch {}
+  };
+  const deleteExpense = (id) => {
+    const updated = expenses.filter(e => e.id !== id);
+    setExpenses(updated);
+    try { localStorage.setItem(`tripai_expenses_${plan.destination}`, JSON.stringify(updated)); } catch {}
+  };
+
+  const handleCalendarExport = () => {
+    const baseDate = plan.travelDate ? new Date(plan.travelDate + 'T00:00:00') : new Date();
+    const fmt = d => d.toISOString().split('T')[0].replace(/-/g, '');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TripAI//DE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+    plan.days?.forEach((day, i) => {
+      const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
+      const next = new Date(d.getTime() + 86400000);
+      const desc = day.slots?.map(s => `${s.time} ${s.name}${s.area ? ' ('+s.area+')' : ''} ~${s.cost}€`).join('\\n') || '';
+      lines.push('BEGIN:VEVENT',
+        `DTSTART;VALUE=DATE:${fmt(d)}`, `DTEND;VALUE=DATE:${fmt(next)}`,
+        `SUMMARY:Tag ${day.dayNumber} ${plan.destination}: ${day.title}`,
+        `DESCRIPTION:${desc}`,
+        `UID:tripai-${plan.destination.replace(/\s/g,'-')}-day${day.dayNumber}@tripai`,
+        'END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `TripAI-${plan.destination}.ics`;
+    a.click();
+    showToast('📅 Kalender exportiert!');
   };
 
   const handleShare = () => {
@@ -602,6 +678,12 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <button onClick={handlePrint} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 📄 PDF
               </button>
+              <button onClick={() => setShowQr(true)} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+                📱 QR-Code
+              </button>
+              <button onClick={handleCalendarExport} className="no-print" style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+                📅 Kalender
+              </button>
               <div style={{ background: overBudget ? '#fff1f2' : '#f0fdf4', border: `1px solid ${overBudget ? '#fecaca' : '#86efac'}`, borderRadius: 50, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16 }}>{overBudget ? '⚠️' : '✅'}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: overBudget ? '#dc2626' : '#16a34a' }}>
@@ -620,6 +702,32 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         </div>
         </div>
       </div>
+
+      {/* Sticky Day Navigation */}
+      {plan.days?.length > 3 && (
+        <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(248,250,252,0.96)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #e2e8f0', padding: '8px 24px' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {plan.days.map((day, i) => (
+              <button key={i} onClick={() => { document.getElementById(`day-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); setActiveDay(i); }}
+                style={{ padding: '5px 13px', borderRadius: 50, border: 'none', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
+                  background: activeDay === i ? '#2563eb' : '#f1f5f9',
+                  color: activeDay === i ? '#fff' : '#64748b',
+                  boxShadow: activeDay === i ? '0 2px 8px rgba(37,99,235,0.3)' : 'none',
+                }}>
+                {day.dayNumber}
+              </button>
+            ))}
+            {totalSlots > 0 && (
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, paddingLeft: 12, borderLeft: '1px solid #e2e8f0' }}>
+                <div style={{ width: 64, height: 5, background: '#e2e8f0', borderRadius: 99 }}>
+                  <div style={{ height: '100%', width: `${(checkedCount / totalSlots) * 100}%`, background: '#22c55e', borderRadius: 99, transition: 'width 0.3s' }} />
+                </div>
+                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{checkedCount}/{totalSlots} erledigt</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 300px', gap: 24, alignItems: 'start' }}>
@@ -700,16 +808,19 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               const cityChanged = day.city && prevCity && day.city !== prevCity;
               return (
                 <Fragment key={i}>
-                  {cityChanged && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', margin: '4px 0' }}>
-                      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
-                      <div style={{ background: 'linear-gradient(135deg,#1e40af,#2563eb)', color: '#fff', borderRadius: 50, padding: '6px 18px', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
-                        ✈️ Weiterreise nach {day.city}
+                  <div id={`day-${i}`} style={{ scrollMarginTop: 56 }}>
+                    {cityChanged && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', margin: '4px 0' }}>
+                        <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
+                        <div style={{ background: 'linear-gradient(135deg,#1e40af,#2563eb)', color: '#fff', borderRadius: 50, padding: '6px 18px', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
+                          ✈️ Weiterreise nach {day.city}
+                        </div>
+                        <div style={{ flex: 1, height: 1, background: 'linear-gradient(270deg, #e2e8f0, transparent)' }} />
                       </div>
-                      <div style={{ flex: 1, height: 1, background: 'linear-gradient(270deg, #e2e8f0, transparent)' }} />
-                    </div>
-                  )}
-                  <DayCard day={day} destination={plan.isRoundtrip && day.city ? day.city : plan.destination} />
+                    )}
+                    <DayCard day={day} destination={plan.isRoundtrip && day.city ? day.city : plan.destination}
+                      dayIdx={i} checkedSlots={checkedSlots} onToggleSlot={toggleSlot} />
+                  </div>
                 </Fragment>
               );
             })}
@@ -832,6 +943,45 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             <WeatherAndMap destination={plan.destination} travelDate={plan.travelDate} />
             <CurrencyConverter destination={plan.destination} />
 
+            {/* Ausgaben-Tracker */}
+            <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>💸 Ausgaben-Tracker</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
+                <span style={{ color: '#64748b' }}>Ausgegeben</span>
+                <span style={{ fontWeight: 800, color: expTotal > plan.budget ? '#dc2626' : '#16a34a' }}>
+                  {expTotal.toLocaleString('de-DE')}€
+                  {expTotal > 0 && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginLeft: 4 }}>/ {plan.budget?.toLocaleString('de-DE')}€</span>}
+                </span>
+              </div>
+              <div style={{ height: 7, background: '#f1f5f9', borderRadius: 99, marginBottom: 14 }}>
+                <div style={{ height: '100%', width: `${Math.min((expTotal / (plan.budget || 1)) * 100, 100)}%`, background: expTotal > plan.budget ? '#ef4444' : '#22c55e', borderRadius: 99, transition: 'width 0.4s' }} />
+              </div>
+              {expenses.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 12, maxHeight: 160, overflowY: 'auto' }}>
+                  {expenses.map(e => (
+                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: 10, padding: '7px 10px' }}>
+                      <span style={{ fontSize: 12, color: '#475569', flex: 1, marginRight: 6 }}>{e.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginRight: 6 }}>{e.amount.toLocaleString('de-DE')}€</span>
+                      <button onClick={() => deleteExpense(e.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 16, padding: 0, lineHeight: 1 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input type="text" value={expInput.name} onChange={e => setExpInput(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Was?" onKeyDown={e => e.key === 'Enter' && addExpense()}
+                  style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '7px 10px', fontSize: 13, outline: 'none', background: '#f8fafc', fontFamily: 'inherit' }}
+                  onFocus={e => e.target.style.borderColor = '#2563eb'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+                <input type="number" value={expInput.amount} onChange={e => setExpInput(p => ({ ...p, amount: e.target.value }))}
+                  placeholder="€" min={0} onKeyDown={e => e.key === 'Enter' && addExpense()}
+                  style={{ width: 60, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '7px 8px', fontSize: 13, outline: 'none', background: '#f8fafc', fontFamily: 'inherit' }}
+                  onFocus={e => e.target.style.borderColor = '#2563eb'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                />
+                <button onClick={addExpense} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, padding: '7px 14px', fontWeight: 800, cursor: 'pointer', fontSize: 16 }}>+</button>
+              </div>
+            </div>
+
             {/* Budget ändern & neu generieren */}
             {onRegenerateWithBudget && (
               <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
@@ -875,6 +1025,23 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
 
         </div>
       </div>
+      {/* QR Modal */}
+      {showQr && (
+        <div onClick={() => setShowQr(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 24, padding: '28px 32px', textAlign: 'center', maxWidth: 280, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>📱 Plan teilen</div>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 18 }}>{plan.destination} · {plan.days?.length} Tage</div>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://tripai-omega.vercel.app/?dest=${encodeURIComponent(plan.destination)}`)}&bgcolor=ffffff&color=0f172a&qzone=2`}
+              alt="QR Code"
+              style={{ width: 200, height: 200, borderRadius: 12, border: '3px solid #f1f5f9', display: 'block', margin: '0 auto' }}
+            />
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 12 }}>Mit Handy abscannen oder Screenshot machen</div>
+            <button onClick={() => setShowQr(false)} style={{ marginTop: 18, width: '100%', background: '#f1f5f9', border: 'none', borderRadius: 12, padding: 12, fontWeight: 700, cursor: 'pointer', fontSize: 14, color: '#374151' }}>Schließen</button>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes slideIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @media print {
