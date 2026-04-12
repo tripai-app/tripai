@@ -399,7 +399,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>≈ {budgetPerPerson}€/Person</span>
               </div>
             </div>
-            <input type="range" min="300" max="10000" step="100"
+            <input type="range" min="300" max="50000" step="500"
               value={form.budget}
               onChange={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
               onInput={e => setForm(f => ({ ...f, budget: parseInt(e.target.value) }))}
@@ -407,7 +407,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
               <span style={{ fontSize: 11, color: '#cbd5e1' }}>300€</span>
-              <span style={{ fontSize: 11, color: '#cbd5e1' }}>10.000€</span>
+              <span style={{ fontSize: 11, color: '#cbd5e1' }}>50.000€</span>
             </div>
           </div>
 

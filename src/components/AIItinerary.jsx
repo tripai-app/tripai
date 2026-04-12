@@ -829,9 +829,9 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>
                   <span>300€</span>
                   <span style={{ fontWeight: 700, color: '#2563eb', fontSize: 14 }}>{sidebarBudget.toLocaleString('de-DE')}€</span>
-                  <span>5.000€</span>
+                  <span>50.000€</span>
                 </div>
-                <input type="range" min={300} max={5000} step={100} value={sidebarBudget}
+                <input type="range" min={300} max={50000} step={500} value={sidebarBudget}
                   onChange={e => setSidebarBudget(parseInt(e.target.value))}
                   style={{ width: '100%', marginBottom: 12, accentColor: '#2563eb' }}
                 />
