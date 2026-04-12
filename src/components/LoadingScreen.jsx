@@ -24,7 +24,7 @@ function getSteps(destination) {
   ];
 }
 
-export default function LoadingScreen({ destination, statusMsg }) {
+export default function LoadingScreen({ destination, statusMsg, streamingTitles = [] }) {
   const [activeStep, setActiveStep] = useState(0);
   const [fact] = useState(() => TRAVEL_FACTS[Math.floor(Math.random() * TRAVEL_FACTS.length)]);
   const STEPS = getSteps(destination);
@@ -67,6 +67,25 @@ export default function LoadingScreen({ destination, statusMsg }) {
       {statusMsg && (
         <div style={{ background: 'rgba(37,99,235,0.18)', border: '1px solid rgba(37,99,235,0.35)', borderRadius: 50, padding: '8px 20px', marginBottom: 24, fontSize: 13, fontWeight: 700, color: '#93c5fd', textAlign: 'center' }}>
           ⏳ {statusMsg}
+        </div>
+      )}
+
+      {/* Live-Vorschau: erscheint sobald Tages-Titel gestreamt werden */}
+      {streamingTitles.length > 0 && (
+        <div style={{ width: '100%', maxWidth: 380, marginBottom: 24, background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: '14px 18px', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', letterSpacing: '0.5px', marginBottom: 10 }}>📋 WIRD GERADE GEPLANT</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {streamingTitles.map((title, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, animation: i === streamingTitles.length - 1 ? 'fadeIn 0.3s ease' : 'none' }}>
+                <span style={{ color: '#22c55e', fontSize: 13, fontWeight: 900, flexShrink: 0 }}>✓</span>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>Tag {i + 1}: {title}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.45, marginTop: 2 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#60a5fa', animation: 'activeDot 1s ease infinite', flexShrink: 0 }} />
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>Weitere Tage werden geplant…</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -158,6 +177,10 @@ export default function LoadingScreen({ destination, statusMsg }) {
         @keyframes dotPulse {
           0%,80%,100% { transform: scale(0.5); opacity: 0.2; }
           40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateX(-8px); }
+          to { opacity: 1; transform: translateX(0); }
         }
       `}</style>
     </div>

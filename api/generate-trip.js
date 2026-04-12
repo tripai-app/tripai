@@ -28,6 +28,10 @@ export default async function handler(req) {
     destination, days, persons, budget, hotelCategory, interests,
     includeTiktok = true, includeHiddenGems = true, wishes = '',
     travelDate = '', departureCity = '',
+    // Kinder-Feature
+    withChildren = false, childrenAges = [],
+    // Rundreise-Feature
+    isRoundtrip = false, roundtripCities = [],
     // Split-Modus: nur bestimmte Tage generieren
     splitMode = false, splitStartDay = 1,
   } = body;
@@ -53,6 +57,33 @@ export default async function handler(req) {
   const tiktokSection = includeTiktok ? `,"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Uhrzeit"}]` : '';
   const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
 
+  // ── Kinder-Kontext ──
+  const ageLabels = { baby: '0–2 Jahre', kleinkind: '3–6 Jahre', schulkind: '7–12 Jahre', teenager: '13–17 Jahre' };
+  const childrenAgesLabel = childrenAges.map(a => ageLabels[a] || a).join(', ') || 'Kinder';
+  const childrenPromptPart = withChildren
+    ? `\nFamilienreise mit Kindern (${childrenAgesLabel}). Empfehle: kinderfreundliche Aktivitäten (Zoos, Wasserparks, Naturerlebnisse, interaktive Museen), Restaurants mit Kindermenü, familiengerechte Unterkunft. Vermeide: Nachtleben, sehr lange Wanderungen, ungeeignete Sehenswürdigkeiten.`
+    : '';
+
+  // ── Rundreise-Kontext ──
+  let effectiveDays = days;
+  let destinationStr = destination;
+  let routePromptPart = '';
+  let roundtripDaySchema = '';
+
+  if (isRoundtrip && roundtripCities.length > 0) {
+    let dayCounter = 1;
+    const citySegments = roundtripCities.map(c => {
+      const start = dayCounter;
+      const end = dayCounter + c.nights - 1;
+      dayCounter += c.nights;
+      return `${c.city} (${c.nights} Nächte, Tage ${start}–${end})`;
+    });
+    effectiveDays = roundtripCities.reduce((s, c) => s + c.nights, 0);
+    destinationStr = `Rundreise: ${citySegments.join(' → ')}`;
+    routePromptPart = `\nRundreise: Füge "city":"Stadtname" zu JEDEM day-Objekt hinzu. Tag 1 = Anreise erste Stadt, letzter Tag = Abreise letzte Stadt.`;
+    roundtripDaySchema = `,"city":"Stadtname"`;
+  }
+
   // ── Split-Modus: nur zusätzliche Tage generieren (für Trips > 7 Tage) ──
   let prompt;
   let maxTokens;
@@ -62,22 +93,22 @@ export default async function handler(req) {
     maxTokens = Math.min(600 + splitDays * 380, 3500);
     prompt = `Reise-Experte. NUR valides JSON, kein Text.
 
-Fortsetzung: ${destination}, ${days} Tage gesamt, ${persons} Personen, ${budget}€, Interessen: ${interestsList || 'Allgemein'}${travelDate ? `, Reisedatum: ${travelDate}` : ''}
+Fortsetzung: ${destinationStr}, ${effectiveDays} Tage gesamt, ${persons} Personen, ${budget}€, Interessen: ${interestsList || 'Allgemein'}${travelDate ? `, Reisedatum: ${travelDate}` : ''}${childrenPromptPart}
 
-Generiere NUR die Tage ${splitStartDay} bis ${days} als JSON-Array:
-[{"dayNumber":${splitStartDay},"title":"Titel","theme":"🗺️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}]
+Generiere NUR die Tage ${splitStartDay} bis ${effectiveDays} als JSON-Array:
+[{"dayNumber":${splitStartDay}${roundtripDaySchema},"title":"Titel","theme":"🗺️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}]
 
-Alle ${splitDays} Tage (${splitStartDay}–${days}) ausgeben. Echte Ortsnamen.`;
+Alle ${splitDays} Tage (${splitStartDay}–${effectiveDays}) ausgeben. Echte Ortsnamen.`;
   } else {
-    maxTokens = Math.min(900 + days * 380, 4000);
+    maxTokens = isRoundtrip ? 4096 : Math.min(900 + effectiveDays * 380, 4000);
     prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
-Reise: ${destination}, ${days} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}
+Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${childrenPromptPart}${routePromptPart}
 
-JSON-Schema (ALLE ${days} Tage, max 6 Wörter pro Textfeld, kurz halten):
-{"destination":"${destination}","emoji":"🏝️","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Air","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Tipp"}],"days":[{"dayNumber":1,"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
+JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
+{"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Air","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Tipp"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
 
-Alle ${days} Tage ausgeben. Echte Ortsnamen.`;
+Alle ${effectiveDays} Tage ausgeben. Echte Ortsnamen.`;
   }
 
   // Anthropic mit stream:true aufrufen
@@ -135,8 +166,8 @@ Alle ${days} Tage ausgeben. Echte Ortsnamen.`;
 
             if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
               fullText += event.delta.text;
-              // Heartbeat damit Vercel die Verbindung offen hält
-              send({ type: 'chunk' });
+              // Text-Delta streamen (ermöglicht Live-Vorschau im Client)
+              send({ type: 'chunk', text: event.delta.text });
             } else if (event.type === 'message_stop') {
               if (splitMode) {
                 // Split-Modus: Array von Tagen extrahieren

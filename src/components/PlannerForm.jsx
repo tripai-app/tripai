@@ -23,6 +23,13 @@ const interests = [
   { id: 'nachtleben', label: '🎉 Nightlife' },
 ];
 
+const AGE_GROUPS = [
+  { id: 'baby',      label: '👶 0–2', desc: 'Kleinstkind' },
+  { id: 'kleinkind', label: '🧒 3–6', desc: 'Kleinkind' },
+  { id: 'schulkind', label: '🎒 7–12', desc: 'Schulkind' },
+  { id: 'teenager',  label: '🧑 13–17', desc: 'Teenager' },
+];
+
 const hotelOptions = [
   { id: 'budget', label: 'Hostel', sub: 'ab 30€/Nacht', icon: '🏠' },
   { id: 'mittel', label: '3-Sterne', sub: 'ab 70€/Nacht', icon: '🏨' },
@@ -46,7 +53,12 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     includeTiktok: true,
     includeHiddenGems: true,
     wishes: '',
+    withChildren: false,
+    childrenAges: [],
+    isRoundtrip: false,
+    roundtripCities: [{ city: '', nights: 2 }],
   });
+  const [roundtripSuggestions, setRoundtripSuggestions] = useState({});
 
   useEffect(() => {
     if (defaultDestination) setForm(f => ({ ...f, destination: defaultDestination }));
@@ -65,9 +77,11 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     e.preventDefault();
     if (!form.destination.trim() || isLoading) return;
     setShowSuggestions(false);
-    onGenerate({ ...form, destination: form.destination.trim() });
+    onGenerate({ ...form, destination: form.destination.trim(), days: effectiveDays });
   };
 
+  const totalRoundtripDays = form.roundtripCities.reduce((sum, c) => sum + (c.nights || 0), 0);
+  const effectiveDays = form.isRoundtrip ? totalRoundtripDays : form.days;
   const budgetPerPerson = Math.round(form.budget / form.persons);
 
   return (
@@ -221,11 +235,18 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 10 }}>TAGE</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, days: Math.max(2, f.days - 1) }))} style={stepBtn}>−</button>
-                  <span style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', minWidth: 28, textAlign: 'center' }}>{form.days}</span>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, days: Math.min(21, f.days + 1) }))} style={stepBtn}>+</button>
-                </div>
+                {form.isRoundtrip ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: '#2563eb', minWidth: 28, textAlign: 'center' }}>{totalRoundtripDays}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.3 }}>aus<br/>Rundreise</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <button type="button" onClick={() => setForm(f => ({ ...f, days: Math.max(2, f.days - 1) }))} style={stepBtn}>−</button>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', minWidth: 28, textAlign: 'center' }}>{form.days}</span>
+                    <button type="button" onClick={() => setForm(f => ({ ...f, days: Math.min(21, f.days + 1) }))} style={stepBtn}>+</button>
+                  </div>
+                )}
               </div>
               <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: 20 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 10 }}>PERSONEN</div>
@@ -269,6 +290,102 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             {form.travelDate && (
               <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, marginLeft: 32 }}>
                 📍 KI berücksichtigt Saison, Wetter & Öffnungszeiten für dieses Datum
+              </div>
+            )}
+          </div>
+
+          {/* Rundreise */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <button type="button" onClick={() => setForm(f => ({ ...f, isRoundtrip: !f.isRoundtrip }))} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              background: form.isRoundtrip ? '#eff6ff' : '#f8fafc',
+              border: `2px solid ${form.isRoundtrip ? '#2563eb' : '#e2e8f0'}`,
+              borderRadius: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.15s',
+            }}>
+              <span style={{ fontSize: 22 }}>🗺️</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: form.isRoundtrip ? '#1d4ed8' : '#374151' }}>Rundreise / Mehrere Städte</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>Plane eine Route durch mehrere Städte</div>
+              </div>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: form.isRoundtrip ? '#2563eb' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
+                {form.isRoundtrip && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
+              </div>
+            </button>
+
+            {form.isRoundtrip && (
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
+                  ✈️ Startort: <strong style={{ color: '#0f172a' }}>{form.destination || '—'}</strong> (oben eingeben)
+                </div>
+                {form.roundtripCities.map((cityEntry, idx) => (
+                  <div key={idx} style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                          type="text"
+                          value={cityEntry.city}
+                          onChange={e => {
+                            const updated = [...form.roundtripCities];
+                            updated[idx] = { ...updated[idx], city: e.target.value };
+                            setForm(f => ({ ...f, roundtripCities: updated }));
+                            setRoundtripSuggestions(s => ({ ...s, [idx]: true }));
+                          }}
+                          onBlur={() => setTimeout(() => setRoundtripSuggestions(s => ({ ...s, [idx]: false })), 150)}
+                          placeholder={`Stadt ${idx + 1}…`}
+                          style={{
+                            width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 12,
+                            padding: '10px 14px', fontSize: 14, outline: 'none',
+                            background: '#f8fafc', fontFamily: 'inherit', boxSizing: 'border-box',
+                          }}
+                          onFocus={e => { e.target.style.borderColor = '#2563eb'; setRoundtripSuggestions(s => ({ ...s, [idx]: true })); }}
+                        />
+                        {roundtripSuggestions[idx] && cityEntry.city.length >= 2 && (() => {
+                          const sugg = TOP_CITIES.filter(c => c.toLowerCase().startsWith(cityEntry.city.toLowerCase())).slice(0, 4);
+                          return sugg.length > 0 ? (
+                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', borderRadius: 12, marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', border: '1px solid #e0eaff', zIndex: 200, overflow: 'hidden' }}>
+                              {sugg.map(city => (
+                                <button key={city} type="button" onMouseDown={() => {
+                                  const updated = [...form.roundtripCities];
+                                  updated[idx] = { ...updated[idx], city };
+                                  setForm(f => ({ ...f, roundtripCities: updated }));
+                                  setRoundtripSuggestions(s => ({ ...s, [idx]: false }));
+                                }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '10px 14px', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#0f172a' }}
+                                  onMouseOver={e => e.currentTarget.style.background = '#eff6ff'}
+                                  onMouseOut={e => e.currentTarget.style.background = 'none'}
+                                >
+                                  📍 {city}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <button type="button" onClick={() => { const u = [...form.roundtripCities]; u[idx] = { ...u[idx], nights: Math.max(1, u[idx].nights - 1) }; setForm(f => ({ ...f, roundtripCities: u })); }} style={stepBtn}>−</button>
+                        <span style={{ minWidth: 20, textAlign: 'center', fontWeight: 800, fontSize: 15 }}>{cityEntry.nights}</span>
+                        <button type="button" onClick={() => { const u = [...form.roundtripCities]; u[idx] = { ...u[idx], nights: Math.min(14, u[idx].nights + 1) }; setForm(f => ({ ...f, roundtripCities: u })); }} style={stepBtn}>+</button>
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 2 }}>Nächte</span>
+                      </div>
+                      {form.roundtripCities.length > 1 && (
+                        <button type="button" onClick={() => setForm(f => ({ ...f, roundtripCities: f.roundtripCities.filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 16, padding: 4, flexShrink: 0 }}>🗑</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {form.roundtripCities.length < 4 && (
+                  <button type="button" onClick={() => setForm(f => ({ ...f, roundtripCities: [...f.roundtripCities, { city: '', nights: 2 }] }))} style={{ background: 'none', border: '1.5px dashed #cbd5e1', borderRadius: 12, padding: '10px', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', transition: 'border-color 0.15s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = '#2563eb'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                  >
+                    + Weitere Stadt hinzufügen
+                  </button>
+                )}
+                {totalRoundtripDays > 0 && (
+                  <div style={{ background: '#eff6ff', borderRadius: 10, padding: '8px 14px', fontSize: 13, color: '#1d4ed8', fontWeight: 700, textAlign: 'center' }}>
+                    📅 {totalRoundtripDays} Nächte gesamt · {form.roundtripCities.filter(c => c.city).map(c => c.city).join(' → ')}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -337,6 +454,58 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                 );
               })}
             </div>
+          </div>
+
+          {/* Mit Kindern */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <button type="button" onClick={() => setForm(f => ({ ...f, withChildren: !f.withChildren, childrenAges: [] }))} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              background: form.withChildren ? '#fefce8' : '#f8fafc',
+              border: `2px solid ${form.withChildren ? '#ca8a04' : '#e2e8f0'}`,
+              borderRadius: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.15s',
+            }}>
+              <span style={{ fontSize: 22 }}>👨‍👩‍👧</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: form.withChildren ? '#854d0e' : '#374151' }}>Mit Kindern reisen</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>KI empfiehlt kindergerechte Aktivitäten & Restaurants</div>
+              </div>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: form.withChildren ? '#ca8a04' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
+                {form.withChildren && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
+              </div>
+            </button>
+
+            {form.withChildren && (
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 10 }}>ALTERSGRUPPEN (mehrere wählbar)</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {AGE_GROUPS.map(ag => {
+                    const sel = form.childrenAges.includes(ag.id);
+                    return (
+                      <button key={ag.id} type="button" onClick={() => setForm(f => ({
+                        ...f,
+                        childrenAges: f.childrenAges.includes(ag.id)
+                          ? f.childrenAges.filter(x => x !== ag.id)
+                          : [...f.childrenAges, ag.id],
+                      }))} style={{
+                        padding: '8px 16px', borderRadius: 50, border: 'none',
+                        background: sel ? '#ca8a04' : '#f1f5f9',
+                        color: sel ? '#fff' : '#64748b',
+                        fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        boxShadow: sel ? '0 3px 10px rgba(202,138,4,0.3)' : 'none',
+                      }}>
+                        {ag.label}
+                        <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 4 }}>{ag.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.childrenAges.length === 0 && (
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>Keine Auswahl = KI wählt allgemein familienfreundlich</div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Eigene Wünsche */}

@@ -574,6 +574,18 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                   {plan.travelDate && <> · 📅 {new Date(plan.travelDate + 'T12:00:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</>}
                   {' '}· ✨ KI-Reiseplan
                 </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {plan.withChildren && (
+                    <span style={{ background: '#fef9c3', color: '#854d0e', borderRadius: 50, padding: '3px 12px', fontSize: 12, fontWeight: 700 }}>
+                      👨‍👩‍👧 Familienreise{plan.childrenAges?.length > 0 ? ` · ${plan.childrenAges.map(a => ({ baby:'0–2', kleinkind:'3–6', schulkind:'7–12', teenager:'13–17' })[a] || a).join(', ')} Jahre` : ''}
+                    </span>
+                  )}
+                  {plan.isRoundtrip && plan.roundtripCities?.length > 0 && (
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', borderRadius: 50, padding: '3px 12px', fontSize: 12, fontWeight: 700 }}>
+                      🗺️ {plan.roundtripCities.map(c => c.city).filter(Boolean).join(' → ')}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -689,7 +701,24 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 14, letterSpacing: '-0.3px' }}>
               📅 Tagesplan
             </h2>
-            {plan.days?.map((day, i) => <DayCard key={i} day={day} destination={plan.destination} />)}
+            {plan.days?.map((day, i) => {
+              const prevCity = i > 0 ? plan.days[i - 1].city : null;
+              const cityChanged = day.city && prevCity && day.city !== prevCity;
+              return (
+                <React.Fragment key={i}>
+                  {cityChanged && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', margin: '4px 0' }}>
+                      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
+                      <div style={{ background: 'linear-gradient(135deg,#1e40af,#2563eb)', color: '#fff', borderRadius: 50, padding: '6px 18px', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
+                        ✈️ Weiterreise nach {day.city}
+                      </div>
+                      <div style={{ flex: 1, height: 1, background: 'linear-gradient(270deg, #e2e8f0, transparent)' }} />
+                    </div>
+                  )}
+                  <DayCard day={day} destination={plan.isRoundtrip && day.city ? day.city : plan.destination} />
+                </React.Fragment>
+              );
+            })}
 
             {/* Affiliate Links */}
             <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} departureCity={plan.departureCity} />
