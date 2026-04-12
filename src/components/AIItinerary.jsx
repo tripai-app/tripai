@@ -629,7 +629,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                   )}
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {plan.flights.map((f, i) => (
+                  {plan.flights.filter((f, i, arr) => arr.findIndex(x => x.airline === f.airline) === i).map((f, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: 14, padding: '14px 18px' }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{f.airline}</div>
@@ -651,7 +651,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <section style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 2px 16px rgba(0,0,0,0.05)', marginBottom: 16 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 14 }}>🏨 Hotelempfehlungen</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {plan.hotels.map((h, i) => (
+                  {plan.hotels.filter((h, i, arr) => arr.findIndex(x => x.name === h.name) === i).map((h, i) => (
                     <div key={i} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
                       background: i === 0 ? '#eff6ff' : '#f8fafc',

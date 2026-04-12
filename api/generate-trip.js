@@ -100,15 +100,15 @@ Generiere NUR die Tage ${splitStartDay} bis ${effectiveDays} als JSON-Array:
 
 Alle ${splitDays} Tage (${splitStartDay}–${effectiveDays}) ausgeben. Echte Ortsnamen.`;
   } else {
-    maxTokens = isRoundtrip ? 4096 : Math.min(900 + effectiveDays * 380, 4000);
+    maxTokens = 4096;
     prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
 Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${childrenPromptPart}${routePromptPart}
 
 JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
-{"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel","stars":3,"pricePerNight":80,"location":"Zentrum","highlight":"Top-Lage","bookingSearch":"${destination} hotel"}],"flights":[{"airline":"Air","type":"Direktflug","duration":"2h","priceFrom":99,"tip":"Tipp"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
+{"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel1","stars":4,"pricePerNight":90,"location":"Zentrum","highlight":"Top-Lage"},{"name":"Hotel2","stars":3,"pricePerNight":60,"location":"Altstadt","highlight":"Günstig & zentral"}],"flights":[{"airline":"Airline1","type":"Direktflug","duration":"3h","priceFrom":150,"tip":"Frühbucher"},{"airline":"Airline2","type":"1 Stopp","duration":"5h","priceFrom":99,"tip":"Günstigste Option"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
 
-Alle ${effectiveDays} Tage ausgeben. Echte Ortsnamen.`;
+WICHTIG: Immer genau ${effectiveDays} Tage ausgeben — nicht weniger! Mindestens 2 verschiedene Hotels. Mindestens 2 verschiedene Flugoptionen. Echte Ortsnamen.`;
   }
 
   // Anthropic mit stream:true aufrufen
