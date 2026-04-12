@@ -344,17 +344,27 @@ function PackingList({ plan }) {
           {Object.entries(items).map(([cat, list]) => (
             <div key={cat}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 8 }}>{cat}</div>
-              {list.map(item => (
-                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid #cbd5e1', flexShrink: 0, display: 'inline-block' }} />
-                  <a href={getAmazonLink(item)} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 13, color: '#334155', textDecoration: 'none', flex: 1 }}
-                    title="Bei Amazon suchen">
-                    {item}
-                    <span style={{ fontSize: 10, color: '#f97316', marginLeft: 6, fontWeight: 700 }}>Amazon →</span>
-                  </a>
-                </div>
-              ))}
+              {list.map(item => {
+                const noAmazon = [
+                  'Reisepass', 'Personalausweis', 'Flugticket', 'Krankenversicherungskarte',
+                  'Hotel-Buchungsbestätigung', 'Bargeld', 'Stäbchen-Etikette',
+                ].some(kw => item.includes(kw));
+                return (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid #cbd5e1', flexShrink: 0, display: 'inline-block' }} />
+                    {noAmazon ? (
+                      <span style={{ fontSize: 13, color: '#334155', flex: 1 }}>{item}</span>
+                    ) : (
+                      <a href={getAmazonLink(item)} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 13, color: '#334155', textDecoration: 'none', flex: 1 }}
+                        title="Bei Amazon suchen">
+                        {item}
+                        <span style={{ fontSize: 10, color: '#f97316', marginLeft: 6, fontWeight: 700 }}>Amazon →</span>
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
