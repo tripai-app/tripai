@@ -326,6 +326,131 @@ function WeatherAndMap({ destination, travelDate }) {
   );
 }
 
+function AllSlotsMap({ plan }) {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let cancelled = false;
+
+    async function init() {
+      // Load Leaflet CSS once
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      // Load Leaflet JS once
+      if (!window.L) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      if (cancelled) return;
+
+      // Geocode city center
+      const gRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(plan.destination)}&format=json&limit=1`);
+      const gData = await gRes.json();
+      if (!gData[0] || cancelled) { setStatus('error'); return; }
+      const centerLat = parseFloat(gData[0].lat);
+      const centerLon = parseFloat(gData[0].lon);
+
+      // Create map
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      const map = window.L.map(containerRef.current).setView([centerLat, centerLon], 13);
+      mapRef.current = map;
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+        maxZoom: 18,
+      }).addTo(map);
+
+      const typeColors = {
+        sehenswuerdigkeit:'#2563eb', restaurant:'#f59e0b', hotel:'#8b5cf6',
+        aktivitaet:'#10b981', strand:'#0ea5e9', shopping:'#f43f5e',
+        nachtleben:'#7c3aed', transport:'#64748b',
+      };
+
+      // Collect unique areas
+      const allSlots = plan.days?.flatMap(day =>
+        (day.slots || []).map(slot => ({ ...slot, dayNumber: day.dayNumber }))
+      ) || [];
+      const areaCache = {};
+
+      for (const slot of allSlots) {
+        if (cancelled) break;
+        const query = slot.area ? `${slot.area}, ${plan.destination}` : plan.destination;
+        if (!areaCache[query]) {
+          try {
+            await new Promise(r => setTimeout(r, 250));
+            const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+            const d = await r.json();
+            areaCache[query] = d[0]
+              ? [parseFloat(d[0].lat), parseFloat(d[0].lon)]
+              : [centerLat + (Math.random() - 0.5) * 0.02, centerLon + (Math.random() - 0.5) * 0.02];
+          } catch {
+            areaCache[query] = [centerLat + (Math.random() - 0.5) * 0.02, centerLon + (Math.random() - 0.5) * 0.02];
+          }
+        }
+        if (cancelled) break;
+        const color = typeColors[slot.type] || '#64748b';
+        const emoji = TYPE_ICONS[slot.type] || '📍';
+        const icon = window.L.divIcon({
+          html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:13px">${emoji}</div>`,
+          iconSize: [30, 30], iconAnchor: [15, 15], className: '',
+        });
+        const pos = areaCache[query];
+        window.L.marker(pos, { icon }).addTo(map).bindPopup(
+          `<div style="font-family:sans-serif;min-width:140px"><div style="font-weight:800;font-size:13px;margin-bottom:2px">${slot.name}</div><div style="font-size:11px;color:#64748b">Tag ${slot.dayNumber} · ${slot.time || ''}</div>${slot.area ? `<div style="font-size:11px;color:#94a3b8">📍 ${slot.area}</div>` : ''}<div style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:700">~${slot.cost}€</div></div>`
+        );
+      }
+      if (!cancelled) setStatus('ready');
+    }
+
+    init().catch(() => { if (!cancelled) setStatus('error'); });
+    return () => {
+      cancelled = true;
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
+  }, [plan.destination]);
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.05)', marginTop: 16 }}>
+      <div style={{ padding: '16px 24px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>🗺️ Alle Orte auf der Karte</div>
+        {status === 'loading' && <span style={{ fontSize: 12, color: '#94a3b8', animation: 'pulse 1.5s infinite' }}>Pins werden geladen…</span>}
+        {status === 'ready' && <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>Klick auf Pin für Details</span>}
+      </div>
+      <div style={{ position: 'relative' }}>
+        <div ref={containerRef} style={{ height: 420, background: '#f1f5f9' }} />
+        {status === 'error' && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 14 }}>
+            Karte konnte nicht geladen werden.
+          </div>
+        )}
+      </div>
+      <div style={{ padding: '10px 24px', display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        {[['sehenswuerdigkeit','#2563eb','🏛️','Sehensw.'],['restaurant','#f59e0b','🍽️','Essen'],['aktivitaet','#10b981','🎯','Aktivität'],['strand','#0ea5e9','🏖️','Strand'],['nachtleben','#7c3aed','🎉','Nightlife'],['shopping','#f43f5e','🛍️','Shopping']].map(([type, color, icon, label]) => {
+          const hasType = plan.days?.some(d => d.slots?.some(s => s.type === type));
+          if (!hasType) return null;
+          return (
+            <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', background: color, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{icon} {label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function PackingList({ plan }) {
   const [open, setOpen] = useState(false);
   const items = generatePacklist(plan);
@@ -825,6 +950,9 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               );
             })}
 
+            {/* All Slots Map */}
+            <AllSlotsMap plan={plan} />
+
             {/* Affiliate Links */}
             <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} departureCity={plan.departureCity} />
 
@@ -1042,12 +1170,107 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         </div>
       )}
 
+      {/* PRINT LAYOUT — hidden on screen, shown when printing */}
+      <div className="print-only" style={{ display: 'none' }}>
+        {/* Header */}
+        <div style={{ borderBottom: '3px solid #2563eb', paddingBottom: 16, marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#0f172a' }}>{plan.emoji} {plan.destination}</div>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                {plan.days?.length} Tage · {plan.persons} {plan.persons === 1 ? 'Person' : 'Personen'}
+                {plan.travelDate && ` · ${new Date(plan.travelDate + 'T12:00:00').toLocaleDateString('de-DE', { day:'numeric', month:'long', year:'numeric' })}`}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', fontSize: 11, color: '#94a3b8' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#2563eb' }}>tripai-omega.vercel.app</div>
+              <div>Erstellt mit TripAI ✨</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Budget-Tabelle */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 12, borderLeft: '4px solid #2563eb', paddingLeft: 10 }}>💰 Budget-Übersicht</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f1f5f9' }}>
+                {['Kategorie','Geschätzt','% vom Budget'].map(h => (
+                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[['✈️ Flüge', plan.costs?.transport],['🏨 Hotel', plan.costs?.hotel],['🍽️ Essen', plan.costs?.essen],['🎯 Aktivitäten', plan.costs?.aktivitaeten]].filter(([,v]) => v > 0).map(([label, val]) => (
+                <tr key={label} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '7px 12px', color: '#374151' }}>{label}</td>
+                  <td style={{ padding: '7px 12px', fontWeight: 700 }}>{val?.toLocaleString('de-DE')}€</td>
+                  <td style={{ padding: '7px 12px', color: '#94a3b8' }}>{Math.round((val / (plan.costs?.gesamt || 1)) * 100)}%</td>
+                </tr>
+              ))}
+              <tr style={{ background: '#eff6ff', fontWeight: 900 }}>
+                <td style={{ padding: '9px 12px', color: '#1e40af' }}>Gesamt</td>
+                <td style={{ padding: '9px 12px', color: '#1e40af', fontSize: 15 }}>{plan.costs?.gesamt?.toLocaleString('de-DE')}€</td>
+                <td style={{ padding: '9px 12px', color: plan.costs?.gesamt > plan.budget ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
+                  {plan.costs?.gesamt > plan.budget ? `⚠️ ${(plan.costs.gesamt - plan.budget).toLocaleString('de-DE')}€ über Budget` : `✅ ${(plan.budget - (plan.costs?.gesamt||0)).toLocaleString('de-DE')}€ unter Budget`}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Tagesplan */}
+        <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 14, borderLeft: '4px solid #2563eb', paddingLeft: 10 }}>📅 Tagesplan</div>
+        {plan.days?.map((day, di) => (
+          <div key={di} style={{ marginBottom: 20, pageBreakInside: 'avoid' }}>
+            <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 14px', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '3px solid #2563eb' }}>
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '1px' }}>TAG {day.dayNumber}  </span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{day.title}</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b' }}>~{day.dailyCostEstimate}€</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <tbody>
+                {day.slots?.map((slot, si) => (
+                  <tr key={si} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '5px 10px', color: '#2563eb', fontWeight: 700, whiteSpace: 'nowrap', width: 50 }}>{slot.time}</td>
+                    <td style={{ padding: '5px 10px', fontSize: 13 }}>{TYPE_ICONS[slot.type] || '📍'}</td>
+                    <td style={{ padding: '5px 10px', fontWeight: 700, color: '#0f172a' }}>{slot.name}</td>
+                    <td style={{ padding: '5px 10px', color: '#64748b' }}>{slot.area}</td>
+                    <td style={{ padding: '5px 10px', color: '#94a3b8', fontStyle: 'italic', fontSize: 11 }}>{slot.description}</td>
+                    <td style={{ padding: '5px 10px', color: '#0f172a', fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'right' }}>~{slot.cost}€</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {day.hiddenGem && <div style={{ fontSize: 11, color: '#7c3aed', marginTop: 6, paddingLeft: 10 }}>💎 Geheimtipp: {day.hiddenGem}</div>}
+          </div>
+        ))}
+
+        {/* Tipps */}
+        {plan.tips?.length > 0 && (
+          <div style={{ marginTop: 20, pageBreakInside: 'avoid' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 10, borderLeft: '4px solid #f59e0b', paddingLeft: 10 }}>💡 Insider-Tipps</div>
+            {plan.tips.map((tip, i) => <div key={i} style={{ fontSize: 12, color: '#374151', marginBottom: 4, paddingLeft: 10 }}>→ {tip}</div>)}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ marginTop: 32, paddingTop: 12, borderTop: '1px solid #e2e8f0', fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>
+          Dieser Reiseplan wurde mit TripAI erstellt — tripai-omega.vercel.app · Alle Angaben ohne Gewähr
+        </div>
+      </div>
+
       <style>{`
         @keyframes slideIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .leaflet-container { font-family: inherit; }
         @media print {
-          nav, .no-print { display: none !important; }
-          body { background: #fff !important; }
-          * { box-shadow: none !important; }
+          body > * { display: none !important; }
+          .print-only { display: block !important; }
+          .print-only * { box-shadow: none !important; }
+          @page { margin: 15mm; size: A4; }
         }
       `}</style>
     </div>
