@@ -31,24 +31,37 @@ const AGE_GROUPS = [
 ];
 
 const REISE_TYPEN = [
-  { id: 'staedtetrip', label: '🏙️ Städtetrip', desc: 'Kultur, Sehenswürdigkeiten, Stadtleben' },
-  { id: 'strand',      label: '🏖️ Strand',     desc: 'Sonne, Meer, Entspannung' },
-  { id: 'abenteuer',   label: '🧗 Abenteuer',   desc: 'Outdoor, Sport, Natur' },
-  { id: 'backpacker',  label: '🎒 Backpacker',  desc: 'Günstig, flexibel, authentisch' },
+  { id: 'staedtetrip', label: '🏙️ Städtetrip',    desc: 'Kultur, Sehensw., Stadtleben' },
+  { id: 'strand',      label: '🏖️ Strand',         desc: 'Sonne, Meer, Entspannung' },
+  { id: 'abenteuer',   label: '🧗 Abenteuer',       desc: 'Outdoor, Sport, Natur' },
+  { id: 'backpacker',  label: '🎒 Backpacker',      desc: 'Günstig, flexibel, authentisch' },
+  { id: 'wellness',    label: '🧘 Wellness & Spa',  desc: 'Entspannung, Massage, Retreats' },
+  { id: 'kulinarisch', label: '🍷 Kulinarisch',     desc: 'Food-Touren, Kochkurse, Wein' },
+  { id: 'fotografie',  label: '📸 Fotografie',      desc: 'Fotogene Orte, goldene Stunde' },
+  { id: 'festival',    label: '🎭 Festival',         desc: 'Lokale Feste, Events, Konzerte' },
 ];
 
 const GRUPPEN_TYPEN = [
-  { id: 'solo',        label: '🧍 Solo',       desc: 'Ich reise allein' },
-  { id: 'paerchen',    label: '💑 Pärchen',    desc: 'Zu zweit' },
-  { id: 'freunde',     label: '👯 Freunde',    desc: 'Freundesgruppe' },
-  { id: 'gruppe',      label: '👥 Gruppe',     desc: '5+ Personen' },
+  { id: 'solo',        label: '🧍 Solo',        desc: 'Ich reise allein' },
+  { id: 'paerchen',    label: '💑 Pärchen',     desc: 'Zu zweit' },
+  { id: 'freunde',     label: '👯 Freunde',     desc: 'Freundesgruppe' },
+  { id: 'familie',     label: '👨‍👩‍👧 Familie',     desc: 'Mit Kindern & Familie' },
+  { id: 'gruppe',      label: '👥 Gruppe',      desc: '5+ Personen' },
+  { id: 'studenten',   label: '🎓 Studenten',   desc: 'Party, günstig, Abenteuer' },
 ];
 
-const ESSEN_PREFS = [
+const ESSEN_PREFS_DIAET = [
   { id: 'vegetarisch', label: '🥦 Vegetarisch' },
   { id: 'vegan',       label: '🌱 Vegan' },
   { id: 'halal',       label: '☪️ Halal' },
   { id: 'glutenfrei',  label: '🌾 Glutenfrei' },
+];
+
+const ESSEN_PREFS_STIL = [
+  { id: 'streetfood',  label: '🍜 Street Food' },
+  { id: 'finedining',  label: '⭐ Fine Dining' },
+  { id: 'lokal',       label: '🏠 Nur Locals' },
+  { id: 'fusion',      label: '🌍 Fusion / Modern' },
 ];
 
 const hotelOptions = [
@@ -81,6 +94,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     reiseTyp: '',
     gruppenTyp: '',
     essenPrefs: [],
+    essenStil: [],
   });
   const [roundtripSuggestions, setRoundtripSuggestions] = useState({});
 
@@ -483,18 +497,18 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
           {/* Reise-Typ */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>REISE-TYP <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {REISE_TYPEN.map(rt => {
                 const sel = form.reiseTyp === rt.id;
                 return (
                   <button key={rt.id} type="button" onClick={() => setForm(f => ({ ...f, reiseTyp: f.reiseTyp === rt.id ? '' : rt.id }))} style={{
-                    padding: '10px 12px', borderRadius: 12, textAlign: 'left',
-                    border: `2px solid ${sel ? '#2563eb' : '#f1f5f9'}`,
-                    background: sel ? '#eff6ff' : '#fafafa',
-                    cursor: 'pointer', transition: 'all 0.15s',
+                    padding: '8px 14px', borderRadius: 50, border: 'none',
+                    background: sel ? '#2563eb' : '#f1f5f9',
+                    color: sel ? '#fff' : '#64748b',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: sel ? '0 3px 10px rgba(37,99,235,0.25)' : 'none',
                   }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: sel ? '#1d4ed8' : '#374151' }}>{rt.label}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{rt.desc}</div>
+                    {rt.label}
                   </button>
                 );
               })}
@@ -524,9 +538,10 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
 
           {/* Essen-Präferenzen */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>ESSEN-PRÄFERENZEN <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {ESSEN_PREFS.map(ep => {
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 12 }}>ESSEN <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
+            <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8, letterSpacing: '0.3px' }}>Diät / Unverträglichkeit</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+              {ESSEN_PREFS_DIAET.map(ep => {
                 const sel = form.essenPrefs.includes(ep.id);
                 return (
                   <button key={ep.id} type="button" onClick={() => setForm(f => ({
@@ -535,13 +550,35 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                       ? f.essenPrefs.filter(x => x !== ep.id)
                       : [...f.essenPrefs, ep.id],
                   }))} style={{
-                    padding: '8px 16px', borderRadius: 50, border: 'none',
+                    padding: '7px 14px', borderRadius: 50, border: 'none',
                     background: sel ? '#10b981' : '#f1f5f9',
                     color: sel ? '#fff' : '#64748b',
                     fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     boxShadow: sel ? '0 3px 10px rgba(16,185,129,0.3)' : 'none',
                   }}>
                     {ep.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8, letterSpacing: '0.3px' }}>Essen-Stil</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {ESSEN_PREFS_STIL.map(es => {
+                const sel = form.essenStil.includes(es.id);
+                return (
+                  <button key={es.id} type="button" onClick={() => setForm(f => ({
+                    ...f,
+                    essenStil: f.essenStil.includes(es.id)
+                      ? f.essenStil.filter(x => x !== es.id)
+                      : [...f.essenStil, es.id],
+                  }))} style={{
+                    padding: '7px 14px', borderRadius: 50, border: 'none',
+                    background: sel ? '#f59e0b' : '#f1f5f9',
+                    color: sel ? '#fff' : '#64748b',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: sel ? '0 3px 10px rgba(245,158,11,0.3)' : 'none',
+                  }}>
+                    {es.label}
                   </button>
                 );
               })}

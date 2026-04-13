@@ -35,7 +35,7 @@ export default async function handler(req) {
     // Split-Modus: nur bestimmte Tage generieren
     splitMode = false, splitStartDay = 1,
     // Neue Felder
-    reiseTyp = '', gruppenTyp = '', essenPrefs = [],
+    reiseTyp = '', gruppenTyp = '', essenPrefs = [], essenStil = [],
   } = body;
 
   const hotelLabel = {
@@ -60,11 +60,13 @@ export default async function handler(req) {
   const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
 
   // ── Reise-Typ / Gruppen / Essen Kontext ──
-  const reiseTypMap = { staedtetrip:'Städtetrip (Fokus: Kultur, Sehenswürdigkeiten, Stadtleben)', strand:'Strandurlaub (Fokus: Meer, Relaxen, Wasseraktivitäten)', abenteuer:'Abenteuerreise (Fokus: Outdoor, Sport, Natur)', backpacker:'Backpacker-Reise (günstig, authentisch, off the beaten path)' };
-  const gruppenMap = { solo:'Einzelreise (Solo-Traveler, max. Flexibilität)', paerchen:'Pärchen-Reise (romantische Atmosphäre, intime Restaurants)', freunde:'Freundesgruppe (gesellige Aktivitäten, gemeinsame Erlebnisse)', gruppe:'Große Gruppe (5+ Personen, gruppenfreundliche Locations)' };
+  const reiseTypMap = { staedtetrip:'Städtetrip (Fokus: Kultur, Sehenswürdigkeiten, Stadtleben)', strand:'Strandurlaub (Fokus: Meer, Relaxen, Wasseraktivitäten)', abenteuer:'Abenteuerreise (Fokus: Outdoor, Sport, Natur)', backpacker:'Backpacker-Reise (günstig, authentisch, off the beaten path)', wellness:'Wellness & Spa (Fokus: Entspannung, Massage, Retreats, ruhige Aktivitäten)', kulinarisch:'Kulinarische Reise (Fokus: Food-Touren, Kochkurse, Weinproben, Märkte)', fotografie:'Fotografie-Reise (Fokus: fotogene Orte, goldene Stunde, Aussichtspunkte)', festival:'Festival & Events (Fokus: lokale Feste, Konzerte, Veranstaltungen, Kultur-Events)' };
+  const gruppenMap = { solo:'Einzelreise (Solo-Traveler, max. Flexibilität, kleinere Unterkünfte)', paerchen:'Pärchen-Reise (romantische Atmosphäre, intime Restaurants, Candle-Light)', freunde:'Freundesgruppe (gesellige Aktivitäten, Bars, gemeinsame Erlebnisse)', familie:'Familienreise (alle Altersgruppen, familienfreundliche Aktivitäten)', gruppe:'Große Gruppe 5+ Personen (gruppenfreundliche Locations, Gruppenrabatte)', studenten:'Studenten-Reise (Party, günstig, Hostels, Bars, Abenteuer, Budget)' };
   const reiseTypPart = reiseTyp && reiseTypMap[reiseTyp] ? `\nReise-Typ: ${reiseTypMap[reiseTyp]}.` : '';
   const gruppenPart = gruppenTyp && gruppenMap[gruppenTyp] ? `\nReisegruppe: ${gruppenMap[gruppenTyp]}.` : '';
-  const essenPart = essenPrefs.length > 0 ? `\nEssen-Präferenzen: ${essenPrefs.map(p => ({ vegetarisch:'Vegetarisch', vegan:'Vegan', halal:'Halal', glutenfrei:'Glutenfrei' }[p] || p)).join(', ')} — passe Restaurantempfehlungen entsprechend an.` : '';
+  const essenDiaetPart = essenPrefs.length > 0 ? `\nDiät/Unverträglichkeit: ${essenPrefs.map(p => ({ vegetarisch:'Vegetarisch', vegan:'Vegan', halal:'Halal', glutenfrei:'Glutenfrei' }[p] || p)).join(', ')} — NUR passende Restaurants empfehlen.` : '';
+  const essenStilPart = essenStil.length > 0 ? `\nEssen-Stil: ${essenStil.map(s => ({ streetfood:'Street Food & Märkte bevorzugen', finedining:'Fine Dining & gehobene Restaurants bevorzugen', lokal:'Nur lokale Einheimischen-Restaurants (keine Touristen-Fallen)', fusion:'Moderne Fusion- & Crossover-Küche bevorzugen' }[s] || s)).join(', ')}.` : '';
+  const essenPart = essenDiaetPart + essenStilPart;
 
   // ── Kinder-Kontext ──
   const ageLabels = { baby: '0–2 Jahre', kleinkind: '3–6 Jahre', schulkind: '7–12 Jahre', teenager: '13–17 Jahre' };

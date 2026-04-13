@@ -93,7 +93,7 @@ export default function App() {
       hotelCategory: hotels[Math.floor(Math.random() * 3)],
       interests, includeTiktok: true, includeHiddenGems: true, wishes: '',
       withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [],
-      reiseTyp: '', gruppenTyp: '', essenPrefs: [] });
+      reiseTyp: '', gruppenTyp: '', essenPrefs: [], essenStil: [] });
   };
 
   const handleLowBudgetTrip = () => {
@@ -102,7 +102,7 @@ export default function App() {
       hotelCategory: 'budget', interests: ['essen', 'kultur', 'natur'],
       includeTiktok: true, includeHiddenGems: true, wishes: '',
       withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [],
-      reiseTyp: '', gruppenTyp: '', essenPrefs: [] });
+      reiseTyp: '', gruppenTyp: '', essenPrefs: [], essenStil: [] });
   };
 
   // ── Response-Cache: gleiche Anfrage innerhalb 24h aus localStorage ──
@@ -115,7 +115,8 @@ export default function App() {
     const typeKey = fd.reiseTyp ? `_${fd.reiseTyp}` : '';
     const gruppeKey = fd.gruppenTyp ? `_${fd.gruppenTyp}` : '';
     const essenKey = fd.essenPrefs?.length ? `_e${[...fd.essenPrefs].sort().join('')}` : '';
-    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}${childrenKey}${roundtripKey}${typeKey}${gruppeKey}${essenKey}`;
+    const stilKey = fd.essenStil?.length ? `_s${[...fd.essenStil].sort().join('')}` : '';
+    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}${childrenKey}${roundtripKey}${typeKey}${gruppeKey}${essenKey}${stilKey}`;
   };
 
   const readCache = (key) => {
