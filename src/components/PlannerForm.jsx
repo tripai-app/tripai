@@ -30,6 +30,27 @@ const AGE_GROUPS = [
   { id: 'teenager',  label: '🧑 13–17', desc: 'Teenager' },
 ];
 
+const REISE_TYPEN = [
+  { id: 'staedtetrip', label: '🏙️ Städtetrip', desc: 'Kultur, Sehenswürdigkeiten, Stadtleben' },
+  { id: 'strand',      label: '🏖️ Strand',     desc: 'Sonne, Meer, Entspannung' },
+  { id: 'abenteuer',   label: '🧗 Abenteuer',   desc: 'Outdoor, Sport, Natur' },
+  { id: 'backpacker',  label: '🎒 Backpacker',  desc: 'Günstig, flexibel, authentisch' },
+];
+
+const GRUPPEN_TYPEN = [
+  { id: 'solo',        label: '🧍 Solo',       desc: 'Ich reise allein' },
+  { id: 'paerchen',    label: '💑 Pärchen',    desc: 'Zu zweit' },
+  { id: 'freunde',     label: '👯 Freunde',    desc: 'Freundesgruppe' },
+  { id: 'gruppe',      label: '👥 Gruppe',     desc: '5+ Personen' },
+];
+
+const ESSEN_PREFS = [
+  { id: 'vegetarisch', label: '🥦 Vegetarisch' },
+  { id: 'vegan',       label: '🌱 Vegan' },
+  { id: 'halal',       label: '☪️ Halal' },
+  { id: 'glutenfrei',  label: '🌾 Glutenfrei' },
+];
+
 const hotelOptions = [
   { id: 'budget', label: 'Hostel', sub: 'ab 30€/Nacht', icon: '🏠' },
   { id: 'mittel', label: '3-Sterne', sub: 'ab 70€/Nacht', icon: '🏨' },
@@ -57,6 +78,9 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     childrenAges: [],
     isRoundtrip: false,
     roundtripCities: [{ city: '', nights: 2 }],
+    reiseTyp: '',
+    gruppenTyp: '',
+    essenPrefs: [],
   });
   const [roundtripSuggestions, setRoundtripSuggestions] = useState({});
 
@@ -450,6 +474,74 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
                     boxShadow: sel ? '0 3px 10px rgba(37,99,235,0.25)' : 'none',
                   }}>
                     {i.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Reise-Typ */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>REISE-TYP <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+              {REISE_TYPEN.map(rt => {
+                const sel = form.reiseTyp === rt.id;
+                return (
+                  <button key={rt.id} type="button" onClick={() => setForm(f => ({ ...f, reiseTyp: f.reiseTyp === rt.id ? '' : rt.id }))} style={{
+                    padding: '10px 12px', borderRadius: 12, textAlign: 'left',
+                    border: `2px solid ${sel ? '#2563eb' : '#f1f5f9'}`,
+                    background: sel ? '#eff6ff' : '#fafafa',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: sel ? '#1d4ed8' : '#374151' }}>{rt.label}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{rt.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Gruppentyp */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>REISEGRUPPE <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {GRUPPEN_TYPEN.map(gt => {
+                const sel = form.gruppenTyp === gt.id;
+                return (
+                  <button key={gt.id} type="button" onClick={() => setForm(f => ({ ...f, gruppenTyp: f.gruppenTyp === gt.id ? '' : gt.id }))} style={{
+                    padding: '8px 16px', borderRadius: 50, border: 'none',
+                    background: sel ? '#2563eb' : '#f1f5f9',
+                    color: sel ? '#fff' : '#64748b',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: sel ? '0 3px 10px rgba(37,99,235,0.25)' : 'none',
+                  }}>
+                    {gt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Essen-Präferenzen */}
+          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>ESSEN-PRÄFERENZEN <span style={{ fontWeight: 400, color: '#cbd5e1' }}>(optional)</span></div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {ESSEN_PREFS.map(ep => {
+                const sel = form.essenPrefs.includes(ep.id);
+                return (
+                  <button key={ep.id} type="button" onClick={() => setForm(f => ({
+                    ...f,
+                    essenPrefs: f.essenPrefs.includes(ep.id)
+                      ? f.essenPrefs.filter(x => x !== ep.id)
+                      : [...f.essenPrefs, ep.id],
+                  }))} style={{
+                    padding: '8px 16px', borderRadius: 50, border: 'none',
+                    background: sel ? '#10b981' : '#f1f5f9',
+                    color: sel ? '#fff' : '#64748b',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: sel ? '0 3px 10px rgba(16,185,129,0.3)' : 'none',
+                  }}>
+                    {ep.label}
                   </button>
                 );
               })}

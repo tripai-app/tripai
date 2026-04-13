@@ -54,6 +54,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [streamingTitles, setStreamingTitles] = useState([]);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('tripai_dark') === '1');
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const toggleDark = () => setDarkMode(d => {
     const next = !d;
@@ -77,7 +78,7 @@ export default function App() {
   const handleStartPlanning = () => { setDefaultDestination(''); navigate('planner'); };
   const handlePlanDestination = (dest) => { setDefaultDestination(dest); navigate('planner'); };
   const handleBack = () => navigate('home');
-  const handleNewTrip = () => { setDefaultDestination(''); setPlan(null); navigate('planner'); };
+  const handleNewTrip = () => { setDefaultDestination(''); setPlan(null); setFormResetKey(k => k + 1); navigate('planner'); };
   const handleOpenPlan = (savedPlan) => { setPlan(savedPlan); navigate('itinerary'); };
 
   const handleSurpriseTrip = () => {
@@ -91,7 +92,8 @@ export default function App() {
     handleGenerate({ destination: dest, days, persons, budget,
       hotelCategory: hotels[Math.floor(Math.random() * 3)],
       interests, includeTiktok: true, includeHiddenGems: true, wishes: '',
-      withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [] });
+      withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [],
+      reiseTyp: '', gruppenTyp: '', essenPrefs: [] });
   };
 
   const handleLowBudgetTrip = () => {
@@ -99,7 +101,8 @@ export default function App() {
     handleGenerate({ destination: dest, days: 4, persons: 2, budget: 300,
       hotelCategory: 'budget', interests: ['essen', 'kultur', 'natur'],
       includeTiktok: true, includeHiddenGems: true, wishes: '',
-      withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [] });
+      withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [],
+      reiseTyp: '', gruppenTyp: '', essenPrefs: [] });
   };
 
   // ── Response-Cache: gleiche Anfrage innerhalb 24h aus localStorage ──
@@ -109,7 +112,10 @@ export default function App() {
     const interests = [...(fd.interests || [])].sort().join(',');
     const childrenKey = fd.withChildren ? `_kids${[...(fd.childrenAges || [])].sort().join('')}` : '';
     const roundtripKey = fd.isRoundtrip ? `_rt${(fd.roundtripCities || []).map(c => `${c.city}${c.nights}`).join('')}` : '';
-    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}${childrenKey}${roundtripKey}`;
+    const typeKey = fd.reiseTyp ? `_${fd.reiseTyp}` : '';
+    const gruppeKey = fd.gruppenTyp ? `_${fd.gruppenTyp}` : '';
+    const essenKey = fd.essenPrefs?.length ? `_e${[...fd.essenPrefs].sort().join('')}` : '';
+    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}${childrenKey}${roundtripKey}${typeKey}${gruppeKey}${essenKey}`;
   };
 
   const readCache = (key) => {
@@ -157,7 +163,7 @@ export default function App() {
     }
 
     // ── Hilfsfunktion: eine API-Anfrage stellen und SSE live streamen ──
-    const callApi = async (body, onChunk) => {
+    const callApiOnce = async (body, onChunk) => {
       const res = await fetch('/api/generate-trip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,6 +195,18 @@ export default function App() {
         }
       }
       throw new Error('Keine gültige Antwort vom Server. Bitte nochmal versuchen.');
+    };
+
+    // Auto-Retry: bei Fehler einmal nach 2s nochmal versuchen
+    const callApi = async (body, onChunk) => {
+      try {
+        return await callApiOnce(body, onChunk);
+      } catch (firstErr) {
+        setLoadingMsg('🔄 Kurzer Fehler — automatischer Neuversuch…');
+        await new Promise(r => setTimeout(r, 2000));
+        setLoadingMsg('');
+        return await callApiOnce(body, onChunk);
+      }
     };
 
     try {
@@ -264,6 +282,7 @@ export default function App() {
 
         {page === 'planner' && (
           <PlannerForm
+            key={formResetKey}
             defaultDestination={defaultDestination}
             onGenerate={handleGenerate}
             isLoading={loading}

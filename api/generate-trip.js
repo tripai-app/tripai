@@ -34,6 +34,8 @@ export default async function handler(req) {
     isRoundtrip = false, roundtripCities = [],
     // Split-Modus: nur bestimmte Tage generieren
     splitMode = false, splitStartDay = 1,
+    // Neue Felder
+    reiseTyp = '', gruppenTyp = '', essenPrefs = [],
   } = body;
 
   const hotelLabel = {
@@ -56,6 +58,13 @@ export default async function handler(req) {
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
   const tiktokSection = includeTiktok ? `,"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Uhrzeit"}]` : '';
   const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
+
+  // ── Reise-Typ / Gruppen / Essen Kontext ──
+  const reiseTypMap = { staedtetrip:'Städtetrip (Fokus: Kultur, Sehenswürdigkeiten, Stadtleben)', strand:'Strandurlaub (Fokus: Meer, Relaxen, Wasseraktivitäten)', abenteuer:'Abenteuerreise (Fokus: Outdoor, Sport, Natur)', backpacker:'Backpacker-Reise (günstig, authentisch, off the beaten path)' };
+  const gruppenMap = { solo:'Einzelreise (Solo-Traveler, max. Flexibilität)', paerchen:'Pärchen-Reise (romantische Atmosphäre, intime Restaurants)', freunde:'Freundesgruppe (gesellige Aktivitäten, gemeinsame Erlebnisse)', gruppe:'Große Gruppe (5+ Personen, gruppenfreundliche Locations)' };
+  const reiseTypPart = reiseTyp && reiseTypMap[reiseTyp] ? `\nReise-Typ: ${reiseTypMap[reiseTyp]}.` : '';
+  const gruppenPart = gruppenTyp && gruppenMap[gruppenTyp] ? `\nReisegruppe: ${gruppenMap[gruppenTyp]}.` : '';
+  const essenPart = essenPrefs.length > 0 ? `\nEssen-Präferenzen: ${essenPrefs.map(p => ({ vegetarisch:'Vegetarisch', vegan:'Vegan', halal:'Halal', glutenfrei:'Glutenfrei' }[p] || p)).join(', ')} — passe Restaurantempfehlungen entsprechend an.` : '';
 
   // ── Kinder-Kontext ──
   const ageLabels = { baby: '0–2 Jahre', kleinkind: '3–6 Jahre', schulkind: '7–12 Jahre', teenager: '13–17 Jahre' };
@@ -103,7 +112,7 @@ Alle ${splitDays} Tage (${splitStartDay}–${effectiveDays}) ausgeben. Echte Ort
     maxTokens = 4096;
     prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
-Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${childrenPromptPart}${routePromptPart}
+Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${reiseTypPart}${gruppenPart}${essenPart}${childrenPromptPart}${routePromptPart}
 
 JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
 {"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel1","stars":4,"pricePerNight":90,"location":"Zentrum","highlight":"Top-Lage"},{"name":"Hotel2","stars":3,"pricePerNight":60,"location":"Altstadt","highlight":"Günstig & zentral"}],"flights":[{"airline":"Airline1","type":"Direktflug","duration":"3h","priceFrom":150,"tip":"Frühbucher"},{"airline":"Airline2","type":"1 Stopp","duration":"5h","priceFrom":99,"tip":"Günstigste Option"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}

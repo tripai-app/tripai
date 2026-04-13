@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import AffiliateSection from './AffiliateSection';
 import { getAmazonLink } from '../data/affiliateConfig';
 import useIsMobile from '../hooks/useIsMobile';
+import { CountdownWidget, PhrasesWidget, EmergencyWidget, TippingWidget, BestTimeWidget } from './TravelWidgets';
 
 // Zählt animiert von 0 auf Zielwert hoch
 function useCountUp(target, duration = 900) {
@@ -381,14 +382,14 @@ function AllSlotsMap({ plan }) {
       const allSlots = plan.days?.flatMap(day =>
         (day.slots || []).map(slot => ({ ...slot, dayNumber: day.dayNumber }))
       ) || [];
+
+      // Parallel geocoding: collect unique queries first, then batch 3 at a time
+      const uniqueQueries = [...new Set(allSlots.map(s => s.area ? `${s.area}, ${plan.destination}` : plan.destination))];
       const areaCache = {};
 
-      for (const slot of allSlots) {
-        if (cancelled) break;
-        const query = slot.area ? `${slot.area}, ${plan.destination}` : plan.destination;
-        if (!areaCache[query]) {
+      const geocodeBatch = async (queries) => {
+        await Promise.all(queries.map(async (query) => {
           try {
-            await new Promise(r => setTimeout(r, 250));
             const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
             const d = await r.json();
             areaCache[query] = d[0]
@@ -397,15 +398,27 @@ function AllSlotsMap({ plan }) {
           } catch {
             areaCache[query] = [centerLat + (Math.random() - 0.5) * 0.02, centerLon + (Math.random() - 0.5) * 0.02];
           }
-        }
+        }));
+      };
+
+      // Batch in groups of 3 with 300ms between batches (Nominatim rate limit)
+      for (let i = 0; i < uniqueQueries.length; i += 3) {
         if (cancelled) break;
+        await geocodeBatch(uniqueQueries.slice(i, i + 3));
+        if (i + 3 < uniqueQueries.length) await new Promise(r => setTimeout(r, 300));
+      }
+
+      if (cancelled) return;
+
+      for (const slot of allSlots) {
+        const query = slot.area ? `${slot.area}, ${plan.destination}` : plan.destination;
         const color = typeColors[slot.type] || '#64748b';
         const emoji = TYPE_ICONS[slot.type] || '📍';
         const icon = window.L.divIcon({
           html: `<div style="width:30px;height:30px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:13px">${emoji}</div>`,
           iconSize: [30, 30], iconAnchor: [15, 15], className: '',
         });
-        const pos = areaCache[query];
+        const pos = areaCache[query] || [centerLat + (Math.random() - 0.5) * 0.02, centerLon + (Math.random() - 0.5) * 0.02];
         window.L.marker(pos, { icon }).addTo(map).bindPopup(
           `<div style="font-family:sans-serif;min-width:140px"><div style="font-weight:800;font-size:13px;margin-bottom:2px">${slot.name}</div><div style="font-size:11px;color:#64748b">Tag ${slot.dayNumber} · ${slot.time || ''}</div>${slot.area ? `<div style="font-size:11px;color:#94a3b8">📍 ${slot.area}</div>` : ''}<div style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:700">~${slot.cost}€</div></div>`
         );
@@ -648,6 +661,32 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
       return favs.some(f => f.destination === plan?.destination);
     } catch { return false; }
   });
+  const [showBackTop, setShowBackTop] = useState(false);
+  const [mobileTab, setMobileTab] = useState('plan');
+
+  // Konfetti on mount
+  useEffect(() => {
+    let cancelled = false;
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
+    script.onload = () => {
+      if (cancelled || !window.confetti) return;
+      window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors: ['#2563eb','#0ea5e9','#22c55e','#f59e0b','#a855f7'] });
+    };
+    if (!window.confetti) {
+      document.head.appendChild(script);
+    } else {
+      window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.55 }, colors: ['#2563eb','#0ea5e9','#22c55e','#f59e0b','#a855f7'] });
+    }
+    return () => { cancelled = true; };
+  }, []);
+
+  // Back-to-top visibility
+  useEffect(() => {
+    const onScroll = () => setShowBackTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   if (!plan) return null;
 
@@ -709,10 +748,27 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
     showToast('📅 Kalender exportiert!');
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const params = new URLSearchParams({ dest: plan.destination });
     const url = `https://tripai-omega.vercel.app/?${params.toString()}`;
-    navigator.clipboard?.writeText(url).then(() => showToast('🔗 Link kopiert!'));
+    const shareData = {
+      title: `TripAI — ${plan.days?.length}-Tage Reiseplan: ${plan.destination}`,
+      text: `Schau dir meinen KI-Reiseplan für ${plan.destination} an! ${plan.emoji || '✈️'}`,
+      url,
+    };
+    try {
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard?.writeText(url);
+        showToast('🔗 Link kopiert!');
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        await navigator.clipboard?.writeText(url);
+        showToast('🔗 Link kopiert!');
+      }
+    }
   };
 
   const handlePrint = () => window.print();
@@ -951,7 +1007,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             })}
 
             {/* All Slots Map */}
-            <AllSlotsMap plan={plan} />
+            <div id="allslotsmap"><AllSlotsMap plan={plan} /></div>
 
             {/* Affiliate Links */}
             <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} departureCity={plan.departureCity} />
@@ -1006,8 +1062,16 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                 )}
               </section>
             )}
+            {/* Nützliche Phrasen */}
+            <PhrasesWidget destination={plan.destination} />
+            {/* Notfall-Nummern */}
+            <EmergencyWidget destination={plan.destination} />
+            {/* Trinkgeld-Info */}
+            <TippingWidget destination={plan.destination} />
+            {/* Beste Reisezeit */}
+            <BestTimeWidget destination={plan.destination} />
             {/* Packliste */}
-            <PackingList plan={plan} />
+            <div id="packing-list"><PackingList plan={plan} /></div>
             {/* Einreise-Checkliste */}
             <TravelChecklist destination={plan.destination} />
 
@@ -1068,11 +1132,12 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               })}
             </div>
 
+            {plan.travelDate && <CountdownWidget destination={plan.destination} travelDate={plan.travelDate} emoji={plan.emoji} />}
             <WeatherAndMap destination={plan.destination} travelDate={plan.travelDate} />
             <CurrencyConverter destination={plan.destination} />
 
             {/* Ausgaben-Tracker */}
-            <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+            <div id="expenses-tracker" style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>💸 Ausgaben-Tracker</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
                 <span style={{ color: '#64748b' }}>Ausgegeben</span>
@@ -1262,9 +1327,69 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         </div>
       </div>
 
+      {/* Back-to-Top Button */}
+      {showBackTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="no-print"
+          style={{
+            position: 'fixed', bottom: isMobile ? 76 : 28, right: 20,
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'linear-gradient(135deg,#2563eb,#0ea5e9)',
+            color: '#fff', border: 'none', cursor: 'pointer',
+            fontSize: 18, zIndex: 900,
+            boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: 'fadeInUp 0.3s ease',
+          }}
+          title="Nach oben"
+        >↑</button>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="no-print" style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(12px)',
+          borderTop: '1px solid #e2e8f0', zIndex: 800,
+          display: 'flex', height: 60,
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+        }}>
+          {[
+            { id: 'plan', icon: '📅', label: 'Plan' },
+            { id: 'map', icon: '🗺️', label: 'Karte' },
+            { id: 'expenses', icon: '💸', label: 'Budget' },
+            { id: 'pack', icon: '🎒', label: 'Packen' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setMobileTab(tab.id);
+                const targets = { plan: 'day-0', map: 'allslotsmap', expenses: 'expenses-tracker', pack: 'packing-list' };
+                const el = document.getElementById(targets[tab.id]);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                else window.scrollTo({ top: tab.id === 'plan' ? 0 : 99999, behavior: 'smooth' });
+              }}
+              style={{
+                flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                color: mobileTab === tab.id ? '#2563eb' : '#94a3b8',
+                fontSize: 10, fontWeight: mobileTab === tab.id ? 700 : 600,
+                transition: 'color 0.15s',
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <style>{`
         @keyframes slideIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
         .leaflet-container { font-family: inherit; }
         @media print {
           body > * { display: none !important; }
