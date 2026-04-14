@@ -6,7 +6,6 @@ import Hero from './components/Hero';
 import PlannerForm from './components/PlannerForm';
 import AIItinerary from './components/AIItinerary';
 import LoadingScreen from './components/LoadingScreen';
-import CompareView from './components/CompareView';
 
 /* ── ErrorBoundary: fängt alle React Crashes auf ── */
 class ErrorBoundary extends Component {
@@ -116,7 +115,8 @@ export default function App() {
     const gruppeKey = fd.gruppenTyp ? `_${fd.gruppenTyp}` : '';
     const essenKey = fd.essenPrefs?.length ? `_e${[...fd.essenPrefs].sort().join('')}` : '';
     const stilKey = fd.essenStil?.length ? `_s${[...fd.essenStil].sort().join('')}` : '';
-    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}${childrenKey}${roundtripKey}${typeKey}${gruppeKey}${essenKey}${stilKey}`;
+    const aktivKey = fd.aktivitaetslevel ? `_a${fd.aktivitaetslevel}` : '';
+    return `tripai_cache_${fd.destination}_${fd.days}_${fd.persons}_${fd.budget}_${fd.hotelCategory}_${interests}${childrenKey}${roundtripKey}${typeKey}${gruppeKey}${essenKey}${stilKey}${aktivKey}`;
   };
 
   const readCache = (key) => {
@@ -296,14 +296,7 @@ export default function App() {
           <LoadingScreen destination={plannedDestination} statusMsg={loadingMsg} streamingTitles={streamingTitles} />
         )}
 
-        {page === 'compare' && (
-          <CompareView
-            favorites={(() => { try { return JSON.parse(localStorage.getItem('tripai_favorites') || '[]'); } catch { return []; } })()}
-            onBack={() => navigate('home')}
-          />
-        )}
-
-        {page === 'itinerary' && plan && (
+{page === 'itinerary' && plan && (
           <AIItinerary
             plan={plan}
             onBack={handleBack}

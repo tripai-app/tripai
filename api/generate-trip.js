@@ -36,6 +36,7 @@ export default async function handler(req) {
     splitMode = false, splitStartDay = 1,
     // Neue Felder
     reiseTyp = '', gruppenTyp = '', essenPrefs = [], essenStil = [],
+    aktivitaetslevel = 'ausgewogen',
   } = body;
 
   const hotelLabel = {
@@ -67,6 +68,14 @@ export default async function handler(req) {
   const essenDiaetPart = essenPrefs.length > 0 ? `\nDiät/Unverträglichkeit: ${essenPrefs.map(p => ({ vegetarisch:'Vegetarisch', vegan:'Vegan', halal:'Halal', glutenfrei:'Glutenfrei' }[p] || p)).join(', ')} — NUR passende Restaurants empfehlen.` : '';
   const essenStilPart = essenStil.length > 0 ? `\nEssen-Stil: ${essenStil.map(s => ({ streetfood:'Street Food & Märkte bevorzugen', finedining:'Fine Dining & gehobene Restaurants bevorzugen', lokal:'Nur lokale Einheimischen-Restaurants (keine Touristen-Fallen)', fusion:'Moderne Fusion- & Crossover-Küche bevorzugen' }[s] || s)).join(', ')}.` : '';
   const essenPart = essenDiaetPart + essenStilPart;
+
+  // ── Aktivitätslevel ──
+  const aktivitaetsMap = {
+    entspannt: 'Entspanntes Tempo: maximal 3 Aktivitäten pro Tag, viel Freiraum, keine Hetze.',
+    ausgewogen: 'Ausgewogenes Tempo: 4–5 Aktivitäten pro Tag, Mischung aus Aktivität & Erholung.',
+    vollgas: 'Intensives Tempo: 6–7 Aktivitäten pro Tag, jede Stunde verplant, maximales Erlebnis.',
+  };
+  const aktivitaetsPart = aktivitaetsMap[aktivitaetslevel] ? `\nAktivitätslevel: ${aktivitaetsMap[aktivitaetslevel]}` : '';
 
   // ── Kinder-Kontext ──
   const ageLabels = { baby: '0–2 Jahre', kleinkind: '3–6 Jahre', schulkind: '7–12 Jahre', teenager: '13–17 Jahre' };
@@ -114,7 +123,7 @@ Alle ${splitDays} Tage (${splitStartDay}–${effectiveDays}) ausgeben. Echte Ort
     maxTokens = 4096;
     prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
-Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${reiseTypPart}${gruppenPart}${essenPart}${childrenPromptPart}${routePromptPart}
+Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${reiseTypPart}${gruppenPart}${essenPart}${aktivitaetsPart}${childrenPromptPart}${routePromptPart}
 
 JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
 {"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel1","stars":4,"pricePerNight":90,"location":"Zentrum","highlight":"Top-Lage"},{"name":"Hotel2","stars":3,"pricePerNight":60,"location":"Altstadt","highlight":"Günstig & zentral"}],"flights":[{"airline":"Airline1","type":"Direktflug","duration":"3h","priceFrom":150,"tip":"Frühbucher"},{"airline":"Airline2","type":"1 Stopp","duration":"5h","priceFrom":99,"tip":"Günstigste Option"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}

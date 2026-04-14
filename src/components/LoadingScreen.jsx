@@ -1,17 +1,63 @@
 import { useState, useEffect } from 'react';
 
+const DEST_FACTS = {
+  'bali':         '🌺 Bali hat mehr Hindu-Tempel als Häuser — über 20.000 auf der ganzen Insel!',
+  'tokio':        '🚇 Tokio hat das pünktlichste U-Bahn-Netz der Welt. Verspätungen unter 1 Minute gelten als Entschuldigung.',
+  'bangkok':      '🛺 Bangkok heißt offiziell „Krung Thep" — ein Name mit 169 Buchstaben, der längste Stadtname der Welt.',
+  'kyoto':        '⛩️ Kyoto hat über 1.600 buddhistische Tempel und 400 Shinto-Schreine.',
+  'singapur':     '🌿 Singapur hat keinen einzigen natürlichen Wasserfluss — das ganze Trinkwasser wird aufbereitet.',
+  'new york':     '🗽 Auf Manhattans Straßen gibt es mehr Hydranten als in manchen europäischen Großstädten Bäume.',
+  'miami':        '🌴 Miami ist die einzige Stadt in den USA, die von zwei Nationalparks flankiert wird.',
+  'lissabon':     '🌉 Lissabon ist die älteste Hauptstadt Westeuropas — gegründet von den Phöniziern um 1200 v. Chr.',
+  'porto':        '🍷 Porto gibt dem Portwein seinen Namen — der berühmte Wein reift hier in speziellenCellars direkt am Douro.',
+  'barcelona':    '🏗️ Barcelonas Sagrada Família wird seit 1882 gebaut — und soll erst 2026 fertig werden.',
+  'amsterdam':    '🚲 Amsterdam hat mehr Fahrräder als Einwohner — über 880.000 Räder für 820.000 Menschen.',
+  'prag':         '🍺 Tschechien trinkt mehr Bier pro Kopf als jedes andere Land der Welt.',
+  'budapest':     '🌊 Budapest hat mehr Thermalquellen als jede andere Hauptstadt der Welt — über 120.',
+  'wien':         '☕ Wien erfand das Kaffeehaus-Konzept im 17. Jahrhundert — mit Zeitungen und Billardtischen.',
+  'santorini':    '🌋 Santorini ist der Krater eines riesigen Vulkans, der 1627 v. Chr. ausbrach.',
+  'marrakesch':   '🌿 Die Medina von Marrakesch hat über 100 km Gassen — und kein einziges Straßenschild.',
+  'kapstadt':     '🏔️ Der Tafelberg ist älter als die Alpen und der Himalaya — über 600 Millionen Jahre alt.',
+  'dubai':        '🏙️ In Dubai ist es verboten, Kamele auf der Autobahn zu reiten. Wirklich.',
+  'malediven':    '🐠 80% der Malediven sind weniger als 1 Meter über dem Meeresspiegel.',
+  'kopenhagen':   '♻️ Kopenhagen will die erste CO₂-neutrale Hauptstadt der Welt werden.',
+  'stockholm':    '🏝️ Stockholm liegt auf 14 Inseln — verbunden durch 57 Brücken.',
+  'reykjavik':    '🌌 Reykjavik ist die nördlichste Hauptstadt der Welt und wird zu 100% mit erneuerbarer Energie versorgt.',
+  'florenz':      '🎨 In Florenz gibt es mehr Kunstwerke pro Einwohner als irgendwo sonst auf der Welt.',
+  'luzern':       '🦁 Das Löwendenkmal in Luzern nannte Mark Twain „das traurigste Stück Stein der Welt".',
+  'chiang mai':   '🐘 Chiang Mai hat mehr Elefantensanktionarien als jede andere Stadt der Welt.',
+  'hanoi':        '🍜 Hanoi ist bekannt als Heimat des Pho — die Suppe wird hier täglich von 40.000+ Straßenküchen serviert.',
+  'dubai':        '🏗️ Burj Khalifa ist mit 828m so hoch, dass man vom 163. Stock aus doppelt in den Sonnenuntergang schauen kann.',
+  'istanbul':     '🌉 Istanbul liegt auf zwei Kontinenten gleichzeitig — Europa und Asien.',
+  'athen':        '🏛️ Die Akropolis ist 2.500 Jahre alt und war nie ohne menschliche Besiedlung.',
+  'rom':          '🪙 In den Trevi-Brunnen werden jährlich über 1,5 Millionen Euro geworfen — alles geht an die Caritas.',
+  'paris':        '🥐 Paris hat mehr Bäckereien als jede andere Stadt der Welt — über 1.200 Boulangeries.',
+  'seoul':        '🎮 Seoul hat die schnellste durchschnittliche Internetverbindung der Welt.',
+  'havanna':      '🚗 In Havanna sind noch über 60.000 Oldtimer aus den 1950ern täglich im Einsatz.',
+};
+
 const TRAVEL_FACTS = [
   'Wusstest du? Die längste Flugroute der Welt ist Singapore → New York mit 18.900 km.',
   'Tipp: Flüge dienstags oder mittwochs sind oft 20–30% günstiger.',
   'Der Eiffelturm ist im Sommer 15 cm höher — wegen der Wärmeausdehnung.',
   'Japan hat über 6.800 Inseln — aber nur 421 sind bewohnt.',
-  'Bali hat mehr Hindu-Tempel als Häuser — über 20.000!',
   'Der billigste Monat für Fernreisen ist meistens Oktober oder November.',
-  'In Dubai ist es verboten, Kamele auf der Autobahn zu reiten.',
-  'Amsterdam hat mehr Fahrräder als Einwohner.',
+  'In den meisten Ländern Asiens isst man mit Stäbchen — außer in Thailand, wo man Löffel und Gabel benutzt.',
+  'Der Nile ist der längste Fluss der Welt — und fließt durch 11 verschiedene Länder.',
+  'In Island gibt es kein Wort für „Bitte" — Höflichkeit wird anders ausgedrückt.',
   'Reykjavik ist die nördlichste Hauptstadt der Welt.',
-  'Singapur hat keinen einzigen natürlichen Wasserfluss.',
+  'In Bhutan wird kein BIP gemessen — nur das „Brutto-National-Glück".',
 ];
+
+function getDestFact(destination) {
+  if (!destination) return null;
+  const key = destination.toLowerCase();
+  // exact match
+  if (DEST_FACTS[key]) return DEST_FACTS[key];
+  // partial match
+  const match = Object.entries(DEST_FACTS).find(([k]) => key.includes(k) || k.includes(key));
+  return match ? match[1] : null;
+}
 
 function getSteps(destination) {
   const d = destination || 'deinem Ziel';
@@ -26,7 +72,10 @@ function getSteps(destination) {
 
 export default function LoadingScreen({ destination, statusMsg, streamingTitles = [] }) {
   const [activeStep, setActiveStep] = useState(0);
-  const [fact] = useState(() => TRAVEL_FACTS[Math.floor(Math.random() * TRAVEL_FACTS.length)]);
+  const [fact] = useState(() => {
+    const destFact = getDestFact(destination);
+    return destFact || TRAVEL_FACTS[Math.floor(Math.random() * TRAVEL_FACTS.length)];
+  });
   const STEPS = getSteps(destination);
   const progress = Math.round(((activeStep + 1) / STEPS.length) * 100);
 

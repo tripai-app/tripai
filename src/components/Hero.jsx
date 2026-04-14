@@ -129,6 +129,11 @@ function DestCard({ dest, onPlan, big = false }) {
       <div style={{ position: 'relative', height: big ? 260 : 160, overflow: 'hidden' }}>
         <img src={dest.img} alt={dest.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.6s ease' }} />
         <div style={{ position: 'absolute', inset: 0, background: hovered ? 'linear-gradient(to bottom,rgba(0,0,0,0) 0%,rgba(0,0,0,0.72) 100%)' : 'linear-gradient(to bottom,rgba(0,0,0,0) 30%,rgba(0,0,0,0.58) 100%)', transition: 'background 0.35s' }} />
+        {(() => { const lbl = getSeasonLabel(dest.name); return lbl ? (
+          <div style={{ position: 'absolute', top: 10, left: 10, background: getLabelColor(lbl), color: '#0f172a', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 50, letterSpacing: '0.2px', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
+            {lbl}
+          </div>
+        ) : null; })()}
         <div style={{ position: 'absolute', bottom: big ? 18 : 12, left: big ? 18 : 12, right: big ? 18 : 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div style={{ fontSize: big ? 24 : 18, marginBottom: 2 }}>{dest.emoji}</div>
@@ -246,6 +251,36 @@ function ExampleTrip({ onStart }) {
       </div>
     </section>
   );
+}
+
+/* ── Seasonal label logic (month 0=Jan … 11=Dec) ─────── */
+const SEASON_LABELS = {
+  'Bali':      ['🌴 Trockenzeit beginnt','🌴 Trockenzeit','🌴 Beste Saison','🌴 Beste Saison','🌴 Beste Saison','🌴 Beste Saison','🌴 Beste Saison','🌴 Beste Saison','🌴 Beste Saison','🌧️ Regenzeit','🌧️ Regenzeit','🌧️ Regenzeit'],
+  'Tokio':     ['❄️ Winterstimmung','❄️ Onsen-Zeit','🌸 Kirschblüte!','🌸 Frühlingstipp','🌿 Frühsommer','☔ Regenzeit','☀️ Heiß & lebendig','☀️ Hochsaison','🍂 Herbstfarben beginnen','🍂 Herbstfarben','🍁 Beste Herbstfarben','⛄ Wintermärkte'],
+  'New York':  ['❄️ Winter in NYC','❄️ Schnee & Shows','🌸 Frühjahrsbeginn','🌸 Perfekt jetzt','🌿 Bestes Wetter','☀️ Hochsaison','🔥 Heißer Sommer','🔥 Hochsaison','🍂 Herbst-Tipp','🍂 Top-Saison','❄️ Vorwinter','🎄 Weihnachts-NYC'],
+  'Barcelona': ['🌤️ Milde Saison','🌤️ Entspannte Zeit','🌸 Frühlings-Tipp','🌸 Perfekt jetzt','☀️ Top-Wetter','☀️ Hochsaison','🔥 Hochsommer','🔥 Strandwetter','🌅 Beste Saison','🌿 Nachsaison','🌤️ Angenehm mild','🎄 Weihnachtsmarkt'],
+  'Paris':     ['🗼 Off-Season Tipp','💕 Valentinstag Special','🌸 Frühlings-Paris','🌸 Perfekte Saison','🌸 Wunderschön','☀️ Hochsaison','☀️ Hochsommer','☀️ Hochsaison','🍷 Weinlese-Saison','🍂 Herbst-Paris','🌂 Herbstregen','🎄 Marchés de Noël'],
+  'Thailand':  ['☀️ Perfekte Saison','☀️ Beste Zeit','☀️ Beste Zeit','☀️ Letzte gute Wochen','🌧️ Regenzeit beginnt','🌧️ Regenzeit','🌧️ Regenzeit','🌧️ Regenzeit','🌧️ Regenzeit','☀️ Saison beginnt','☀️ Beste Saison','☀️ Beste Saison'],
+  'Prag':      ['❄️ Winter-Charme','💰 Günstigste Zeit','🌸 Frühling beginnt','🌸 Perfekt jetzt','🌿 Top-Saison','☀️ Hochsaison','☀️ Hochsaison','🌿 Angenehm warm','🍂 Herbstfarben','🍁 Goldener Herbst','💰 Geheimtipp','🎄 Weihnachtsmarkt'],
+  'Budapest':  ['💰 Budget-Tipp','💰 Günstigste Zeit','🌸 Frühling','🌸 Perfekt warm','☀️ Top-Saison','☀️ Hochsaison','☀️ Hochsaison','🌊 Bäder-Zeit','🍂 Herbstfarben','🍁 Schönster Herbst','💰 Geheimtipp','🎄 Adventsmarkt'],
+  'Santorini': ['🏖️ Off-Season Ruhe','🏖️ Ruhige Saison','🌸 Vorsaison','🌸 Frühsaison','☀️ Saison startet','☀️ Beste Saison','🔥 Hochsaison','🔥 Hochsaison','🌅 Goldene Stunde','🌤️ Nachsaison','🏖️ Letzte Besucher','❄️ Fast menschenleer'],
+  'Marrakesch':['☀️ Angenehm mild','🌸 Beste Zeit','🌸 Perfekte Saison','☀️ Wärmer werdend','☀️ Letzte Frische','🌡️ Sehr heiß','🔥 Zu heiß!','🔥 Zu heiß!','☀️ Angenehmer','☀️ Top-Saison','🌸 Beste Zeit','☀️ Angenehm mild'],
+  'Lissabon':  ['🌤️ Mild & ruhig','🌤️ Mild & sonnig','🌸 Frühling beginnt','🌸 Perfekte Zeit','☀️ Beste Saison','☀️ Hochsaison','🔥 Heiß & beliebt','🔥 Hochsaison','🌿 Beste Saison','🌿 Goldener Herbst','🌤️ Angenehm','🌤️ Wintermild'],
+  'Dubai':     ['☀️ Perfekte Zeit','☀️ Beste Saison','☀️ Top-Saison','🌡️ Wird wärmer','🌡️ Sehr warm','🔥 Sehr heiß','🔥 Extrem heiß','🔥 Extrem heiß','🌡️ Sehr heiß','🌤️ Angenehmer','☀️ Perfekte Zeit','☀️ Beste Saison'],
+};
+const LABEL_COLORS = { '🌸': '#f9a8d4', '☀️': '#fde68a', '🌴': '#6ee7b7', '🔥': '#fb923c', '❄️': '#bae6fd', '💰': '#86efac', '🍂': '#fcd34d', '🌅': '#fb923c', '🎄': '#6ee7b7', '🌤️': '#bae6fd', '🏖️': '#7dd3fc', '🌿': '#6ee7b7', '🌧️': '#cbd5e1', '🌡️': '#fca5a5', '💕': '#fda4af', '🌺': '#f9a8d4' };
+function getSeasonLabel(name) {
+  const month = new Date().getMonth();
+  const labels = SEASON_LABELS[name];
+  if (!labels) return null;
+  return labels[month];
+}
+function getLabelColor(label) {
+  if (!label) return '#f1f5f9';
+  for (const [emoji, color] of Object.entries(LABEL_COLORS)) {
+    if (label.startsWith(emoji)) return color;
+  }
+  return '#f1f5f9';
 }
 
 /* ── Data ──────────────────────────────────────────── */

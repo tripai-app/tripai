@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import useIsMobile from '../hooks/useIsMobile';
 
-function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
+function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
   const [favs, setFavs] = useState([]);
   const ref = useRef(null);
   const isMobile = useIsMobile();
@@ -107,11 +107,6 @@ function FavoritesMenu({ onClose, onNavigate, onCompare, onOpenPlan }) {
 
       {/* Footer-Buttons */}
       <div style={{ padding: '10px 20px 16px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, borderTop: '1px solid #f1f5f9' }}>
-        {favs.length >= 2 && (
-          <button onClick={() => { onCompare(); onClose(); }} style={{ width: '100%', background: '#f0fdf4', color: '#16a34a', border: '1px solid #86efac', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            📊 Reisen vergleichen
-          </button>
-        )}
         <button onClick={() => { onNavigate('planner'); onClose(); }} style={{ width: '100%', background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           ✈️ Neue Reise planen
         </button>
@@ -217,7 +212,7 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
           </button>
         </div>
 
-        {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onCompare={() => onNavigate('compare')} onOpenPlan={onOpenPlan} />}
+        {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onOpenPlan={onOpenPlan} />}
       </div>
     </nav>
   );

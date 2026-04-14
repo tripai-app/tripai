@@ -74,6 +74,7 @@ const hotelOptions = [
 export default function PlannerForm({ defaultDestination, onGenerate, isLoading, error, onBack }) {
   const isMobile = useIsMobile();
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const destRef = useRef(null);
   const [form, setForm] = useState({
     destination: defaultDestination || '',
@@ -87,14 +88,13 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     includeTiktok: true,
     includeHiddenGems: true,
     wishes: '',
-    withChildren: false,
-    childrenAges: [],
     isRoundtrip: false,
     roundtripCities: [{ city: '', nights: 2 }],
     reiseTyp: '',
     gruppenTyp: '',
     essenPrefs: [],
     essenStil: [],
+    aktivitaetslevel: 'ausgewogen',
   });
   const [roundtripSuggestions, setRoundtripSuggestions] = useState({});
 
@@ -115,7 +115,17 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
     e.preventDefault();
     if (!form.destination.trim() || isLoading) return;
     setShowSuggestions(false);
-    onGenerate({ ...form, destination: form.destination.trim(), days: effectiveDays });
+    // Familie-Gruppentyp → withChildren mapping
+    const withChildren = form.gruppenTyp === 'familie';
+    onGenerate({
+      ...form,
+      destination: form.destination.trim(),
+      days: effectiveDays,
+      withChildren,
+      childrenAges: [],
+      includeTiktok: true,
+      includeHiddenGems: true,
+    });
   };
 
   const totalRoundtripDays = form.roundtripCities.reduce((sum, c) => sum + (c.nights || 0), 0);
@@ -449,6 +459,23 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             </div>
           </div>
 
+          {/* ── Mehr Optionen Toggle ── */}
+          <button type="button" onClick={() => setShowMore(v => !v)} style={{
+            width: '100%', background: showMore ? '#eff6ff' : '#fff',
+            border: `2px solid ${showMore ? '#2563eb' : '#e2e8f0'}`,
+            borderRadius: 16, padding: '14px 20px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontSize: 14, fontWeight: 700, color: showMore ? '#1d4ed8' : '#64748b',
+            transition: 'all 0.2s',
+          }}>
+            <span>{showMore ? '▲ Weniger Optionen' : '▼ Mehr Optionen'}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>
+              {showMore ? 'Unterkunft, Stil, Essen…' : 'Unterkunft, Reise-Typ, Essen, Wünsche…'}
+            </span>
+          </button>
+
+          {showMore && <>
+
           {/* Hotel */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>UNTERKUNFT</div>
@@ -585,56 +612,29 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             </div>
           </div>
 
-          {/* Mit Kindern */}
+          {/* Aktivitätslevel */}
           <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-            <button type="button" onClick={() => setForm(f => ({ ...f, withChildren: !f.withChildren, childrenAges: [] }))} style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-              background: form.withChildren ? '#fefce8' : '#f8fafc',
-              border: `2px solid ${form.withChildren ? '#ca8a04' : '#e2e8f0'}`,
-              borderRadius: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left',
-              transition: 'all 0.15s',
-            }}>
-              <span style={{ fontSize: 22 }}>👨‍👩‍👧</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: form.withChildren ? '#854d0e' : '#374151' }}>Mit Kindern reisen</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>KI empfiehlt kindergerechte Aktivitäten & Restaurants</div>
-              </div>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: form.withChildren ? '#ca8a04' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
-                {form.withChildren && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
-              </div>
-            </button>
-
-            {form.withChildren && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 10 }}>ALTERSGRUPPEN (mehrere wählbar)</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {AGE_GROUPS.map(ag => {
-                    const sel = form.childrenAges.includes(ag.id);
-                    return (
-                      <button key={ag.id} type="button" onClick={() => setForm(f => ({
-                        ...f,
-                        childrenAges: f.childrenAges.includes(ag.id)
-                          ? f.childrenAges.filter(x => x !== ag.id)
-                          : [...f.childrenAges, ag.id],
-                      }))} style={{
-                        padding: '8px 16px', borderRadius: 50, border: 'none',
-                        background: sel ? '#ca8a04' : '#f1f5f9',
-                        color: sel ? '#fff' : '#64748b',
-                        fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        boxShadow: sel ? '0 3px 10px rgba(202,138,4,0.3)' : 'none',
-                      }}>
-                        {ag.label}
-                        <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 4 }}>{ag.desc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.childrenAges.length === 0 && (
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>Keine Auswahl = KI wählt allgemein familienfreundlich</div>
-                )}
-              </div>
-            )}
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>TEMPO DER REISE</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+              {[
+                { id: 'entspannt', label: '🧘 Entspannt', desc: '2–3 Aktivitäten/Tag' },
+                { id: 'ausgewogen', label: '⚖️ Ausgewogen', desc: '4–5 Aktivitäten/Tag' },
+                { id: 'vollgas', label: '🔥 Vollgas', desc: '6–7 Aktivitäten/Tag' },
+              ].map(al => {
+                const sel = form.aktivitaetslevel === al.id;
+                return (
+                  <button key={al.id} type="button" onClick={() => setForm(f => ({ ...f, aktivitaetslevel: al.id }))} style={{
+                    padding: '10px 8px', borderRadius: 12, textAlign: 'center',
+                    border: `2px solid ${sel ? '#2563eb' : '#f1f5f9'}`,
+                    background: sel ? '#eff6ff' : '#fafafa',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: sel ? '#1d4ed8' : '#374151' }}>{al.label}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>{al.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Eigene Wünsche */}
@@ -658,36 +658,7 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             <div style={{ fontSize: 11, color: '#cbd5e1', textAlign: 'right', marginTop: 4 }}>{form.wishes.length}/300</div>
           </div>
 
-          {/* Extras */}
-          <div style={{ background: '#fff', borderRadius: 20, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', marginBottom: 14 }}>EXTRAS</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[
-                { key: 'includeTiktok', emoji: '📱', label: 'TikTok & Instagram Spots', desc: 'Fotogene Orte mit bester Uhrzeit' },
-                { key: 'includeHiddenGems', emoji: '💎', label: 'Geheimtipps & Hidden Gems', desc: 'Orte abseits der Touristenpfade' },
-              ].map(({ key, emoji, label, desc }) => {
-                const active = form[key];
-                return (
-                  <button key={key} type="button" onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))} style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    background: active ? '#eff6ff' : '#f8fafc',
-                    border: `2px solid ${active ? '#2563eb' : '#e2e8f0'}`,
-                    borderRadius: 14, padding: '12px 16px', cursor: 'pointer', textAlign: 'left',
-                    transition: 'all 0.15s',
-                  }}>
-                    <span style={{ fontSize: 22 }}>{emoji}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#1d4ed8' : '#374151' }}>{label}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{desc}</div>
-                    </div>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: active ? '#2563eb' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
-                      {active && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          </> /* Ende showMore */}
 
           {/* Bottom submit */}
           <button type="submit" disabled={isLoading || !form.destination.trim()} style={{

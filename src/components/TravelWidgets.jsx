@@ -290,3 +290,81 @@ export function BestTimeWidget({ destination }) {
     </div>
   );
 }
+
+// ─── Dos & Don'ts Widget ───────────────────────────────────────────────────────
+
+const DOS_DONTS_DB = {
+  japan:        { dos: ['Schuhe ausziehen beim Betreten von Häusern','Leise in U-Bahnen & öffentlichen Orten','Mit beiden Händen Visitenkarten reichen','Schlange stehen & Ordnung einhalten'], donts: ['Nie trinkend auf der Straße laufen','Kein Trinkgeld geben — gilt als unhöflich!','Nicht laut telefonieren in der Bahn','Nie Essstäbchen senkrecht in Reis stecken'] },
+  thai:         { dos: ['Beim Betreten von Tempeln Schuhe ausziehen','Knöchel & Schultern in Tempeln bedecken','Mit einem Lächeln grüßen (Wai-Geste)','Mit etwas Respekt über die Monarchie sprechen'], donts: ['Nie mit dem Fuß auf etwas zeigen','Den Kopf einer Person nicht anfassen','Keine Kritik an der Königsfamilie','In Tempeln nicht Küssen oder Umarmen'] },
+  indonesisch:  { dos: ['Mit rechter Hand essen & nehmen','In Tempeln Sarong tragen','Respektvoller Umgang mit der Natur','Erlaubnis vor dem Fotografieren fragen'], donts: ['Linke Hand beim Essen vermeiden','Nicht oben ohne an heiligen Stätten','Keine laute Kritik an der Regierung','Nicht ins Meer urinieren — heiliges Wasser'] },
+  arabisch:     { dos: ['Ramadan respektieren (nicht öffentlich essen)','Konservativ kleiden (Frauen Kopfbedeckung)','Mit der rechten Hand essen & grüßen','Erlaubnis vor dem Fotografieren von Personen'], donts: ['Kein Alkohol auf der Straße (Dubai: verboten)','Keine Zuneigung in der Öffentlichkeit','Frauen nicht ohne Erlaubnis anfassen','Keine Kritik am Islam oder Königshaus'] },
+  franzoesisch: { dos: ['Mit "Bonjour" in Läden grüßen','Beim Betreten von Restaurants höflich fragen','Wein & Essen in Ruhe genießen','Kleidung im Restaurant: gepflegt'], donts: ['Nicht sofort Englisch sprechen — erst Français versuchen','Kein Smalltalk mit Fremden im Metro','Nicht am Tisch über Geld reden','Keine laute Unterhaltung in Museen'] },
+  spanisch:     { dos: ['Spät essen — Dinner ab 21:00 Uhr!','Siesta respektieren (13–17 Uhr)','Freundlich & offen kommunizieren','Wangenkuss zur Begrüßung bei Bekannten'], donts: ['Restaurants vor 21 Uhr nicht erwarten voll','Nie hetzen — „mañana" ist eine Lebensweise','Keine lauten Touristen-Klischees','Nie Katalanen als Spanier bezeichnen'] },
+  italienisch:  { dos: ['Espresso nur im Stehen — billiger & authentischer','Schick kleiden für Abendessen','Mittagspause von 13–15 Uhr beachten','Pasta & Wein kombinieren wie Einheimische'], donts: ['Nie Cappuccino nach dem Mittag','Keine Touristenfallen (Piazza Navona!)','Nicht mit knapper Kleidung in Kirchen','Nie Parmesan auf Meeresfrüchte-Pasta'] },
+  griechisch:   { dos: ['Nachmittagspause (14–17 Uhr) respektieren','Ouzo oder Raki zur Meze annehmen','In Kirchen Schultern & Knie bedecken','Herzlich & offen auf Einladungen reagieren'], donts: ['Nicht mit flacher Hand winken (Moutza-Beleidigung!)','Keine Schuhe in orthodoxen Kirchen','Nicht über Zypern-Konflikt diskutieren','Kein lautes Verhalten in ruhigen Dörfern'] },
+  tuerkisch:    { dos: ['Schuhe in Moscheen ausziehen & bedecken','Çay (Tee) annehmen — Ablehnung gilt als unhöflich','Feilschen auf Basaren ist erwünscht!','Gastfreundschaft mit Danke erwidern'], donts: ['Nicht mit der Sohle auf Teppiche treten','Keine politischen Debatten mit Fremden','Keine Küsse in der Öffentlichkeit','Nie die Türkei-Griechenland-Rivalität ansprechen'] },
+  vietnamesisch:{ dos: ['Ältere Menschen zuerst grüßen','Mit beiden Händen geben & nehmen','Schuhe vor Tempeln ausziehen','Leise in Tempeln & heiligen Stätten'], donts: ['Nicht auf Geister-Altäre zeigen','Keine politischen Debatten','Nicht laut lachen über Missgeschicke','Nie Stäbchen senkrecht in Reisschüssel stecken'] },
+  koreanisch:   { dos: ['Älteren Menschen zuerst trinken lassen','Beide Hände beim Geben & Nehmen','Schuhe ausziehen in vielen Restaurants','Einladungen zum Essen gerne annehmen'], donts: ['Nie selbst sein eigenes Glas einschenken','Keine Diskussionen über Nord/Südkorea','Nicht Essen ablehnen ohne Erklärung','Nie mit Rotstift Namen schreiben (Unglück)'] },
+  portugiesisch:{ dos: ['Saudade — Gefühle & Nostalgie teilen','Fado-Shows respektvoll zuhören','Pastéis de Nata immer frisch essen','Auf „Obrigado/a" bestehen — Danke sagen'], donts: ['Nie Brasilianer als gleiche Portugiesen behandeln','Keine Überheblichkeit gegenüber Spaniern','Nicht auf Spanisch antworten wenn Portugiesisch gesprochen wird','Fado-Shows nie unterbrechen'] },
+  usa:          { dos: ['Trinkgeld 18–25% in Restaurants','Freundlich & direkt kommunizieren','Schlange stehen & Ordnung halten','Small Talk mit Fremden ist normal & erwünscht'], donts: ['Nie unter 15% Trinkgeld geben','Nicht über Politisches mit Fremden diskutieren','Keine Witze über Sicherheit im Flughafen','Nie in der Öffentlichkeit Alkohol trinken'] },
+};
+
+const DEST_DODOSNTS = {
+  tokio:'japan', kyoto:'japan', osaka:'japan',
+  bangkok:'thai', phuket:'thai', 'chiang mai':'thai',
+  bali:'indonesisch', lombok:'indonesisch',
+  marrakesch:'arabisch', dubai:'arabisch', 'abu dhabi':'arabisch',
+  paris:'franzoesisch', nizza:'franzoesisch',
+  barcelona:'spanisch', madrid:'spanisch', mallorca:'spanisch', teneriffa:'spanisch',
+  rom:'italienisch', florenz:'italienisch', venedig:'italienisch',
+  santorini:'griechisch', athen:'griechisch', mykonos:'griechisch',
+  istanbul:'tuerkisch', antalya:'tuerkisch',
+  hanoi:'vietnamesisch', 'ho-chi-minh':'vietnamesisch',
+  seoul:'koreanisch', busan:'koreanisch',
+  lissabon:'portugiesisch', porto:'portugiesisch',
+  'new york':'usa', miami:'usa',
+};
+
+export function DosDontsWidget({ destination }) {
+  const [open, setOpen] = useState(false);
+  const destLower = destination?.toLowerCase() || '';
+  const key = (() => {
+    if (DEST_DODOSNTS[destLower]) return DEST_DODOSNTS[destLower];
+    const match = Object.entries(DEST_DODOSNTS).find(([k]) => destLower.includes(k) || k.includes(destLower));
+    return match ? match[1] : null;
+  })();
+  const data = key ? DOS_DONTS_DB[key] : null;
+  if (!data) return null;
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, padding: '16px 20px', marginTop: 16, boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>
+      <button type="button" onClick={() => setOpen(v => !v)} style={{
+        width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>🙏 Kulturelle Dos &amp; Don'ts</div>
+        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ background: '#f0fdf4', borderRadius: 14, padding: '12px 14px', border: '1px solid #86efac' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 8, letterSpacing: '0.3px' }}>✅ TUN</div>
+            {data.dos.map((item, i) => (
+              <div key={i} style={{ fontSize: 12, color: '#166534', marginBottom: 6, lineHeight: 1.4, display: 'flex', gap: 6 }}>
+                <span style={{ flexShrink: 0, color: '#22c55e' }}>•</span>{item}
+              </div>
+            ))}
+          </div>
+          <div style={{ background: '#fff1f2', borderRadius: 14, padding: '12px 14px', border: '1px solid #fecaca' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', marginBottom: 8, letterSpacing: '0.3px' }}>❌ LASSEN</div>
+            {data.donts.map((item, i) => (
+              <div key={i} style={{ fontSize: 12, color: '#991b1b', marginBottom: 6, lineHeight: 1.4, display: 'flex', gap: 6 }}>
+                <span style={{ flexShrink: 0 }}>•</span>{item}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

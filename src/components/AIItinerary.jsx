@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import AffiliateSection from './AffiliateSection';
 import { getAmazonLink } from '../data/affiliateConfig';
 import useIsMobile from '../hooks/useIsMobile';
-import { CountdownWidget, PhrasesWidget, EmergencyWidget, TippingWidget, BestTimeWidget } from './TravelWidgets';
+import { CountdownWidget, PhrasesWidget, EmergencyWidget, TippingWidget, BestTimeWidget, DosDontsWidget } from './TravelWidgets';
 
 // Zählt animiert von 0 auf Zielwert hoch
 function useCountUp(target, duration = 900) {
@@ -582,9 +582,25 @@ function Slot({ slot, isLast, destination, checked, onToggle }) {
   );
 }
 
+const RAIN_ALTERNATIVES = [
+  '🏛️ Lokale Museen & Galerien besuchen',
+  '☕ Gemütliche Cafés & Bakeries erkunden',
+  '🛍️ Überdachte Märkte & Einkaufszentren',
+  '🧘 Wellness, Massage oder Spa-Tag',
+  '🎬 Lokales Kino (Originalton erleben)',
+  '📚 Buchläden oder Bibliotheken entdecken',
+  '🍳 Kochkurs oder Food-Tour buchen',
+  '🎲 Board-Game-Café oder Escape-Room',
+  '🎨 Kunstgalerie oder Ausstellung',
+  '🍷 Weinprobe oder Craft-Beer-Bar',
+];
+
 function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
   const doneCount = day.slots?.filter((_, i) => checkedSlots?.[`${dayIdx}_${i}`]).length || 0;
   const totalCount = day.slots?.length || 0;
+  const [showRain, setShowRain] = useState(false);
+  // Pick 4 consistent alternatives based on dayNumber
+  const rainAlts = RAIN_ALTERNATIVES.filter((_, i) => i % 3 !== day.dayNumber % 3).slice(0, 4);
   return (
     <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 2px 16px rgba(0,0,0,0.05)', marginBottom: 14, overflow: 'hidden' }}>
       <div style={{ padding: '18px 24px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
@@ -594,9 +610,16 @@ function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
           {day.theme && <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{day.theme}</div>}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <div style={{ background: '#f8fafc', borderRadius: 12, padding: '8px 14px', textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 1 }}>Kosten</div>
-            <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a' }}>~{day.dailyCostEstimate}€</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button type="button" onClick={() => setShowRain(v => !v)} title="Regentag-Alternativen" style={{
+              background: showRain ? '#e0f2fe' : '#f8fafc', border: `1.5px solid ${showRain ? '#38bdf8' : '#e2e8f0'}`,
+              borderRadius: 10, padding: '6px 10px', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s',
+              color: showRain ? '#0284c7' : '#94a3b8',
+            }}>🌧️</button>
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '8px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 1 }}>Kosten</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a' }}>~{day.dailyCostEstimate}€</div>
+            </div>
           </div>
           {totalCount > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -608,6 +631,18 @@ function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
           )}
         </div>
       </div>
+      {showRain && (
+        <div style={{ background: 'linear-gradient(135deg,#e0f2fe,#f0f9ff)', borderBottom: '1px solid #bae6fd', padding: '14px 24px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0284c7', marginBottom: 10 }}>🌧️ REGENTAG? DRINNEN-ALTERNATIVEN</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 6 }}>
+            {rainAlts.map((alt, i) => (
+              <div key={i} style={{ fontSize: 13, color: '#0369a1', background: '#fff', borderRadius: 10, padding: '8px 12px', fontWeight: 500 }}>
+                {alt}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ padding: '20px 24px' }}>
         {day.slots?.map((slot, i) => (
           <Slot key={i} slot={slot} isLast={i === day.slots.length - 1} destination={destination}
@@ -663,6 +698,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
   });
   const [showBackTop, setShowBackTop] = useState(false);
   const [mobileTab, setMobileTab] = useState('plan');
+  const [showAffiliate, setShowAffiliate] = useState(false);
 
   // Konfetti on mount
   useEffect(() => {
@@ -1009,8 +1045,24 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             {/* All Slots Map */}
             <div id="allslotsmap"><AllSlotsMap plan={plan} /></div>
 
-            {/* Affiliate Links */}
-            <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} departureCity={plan.departureCity} />
+            {/* Affiliate Links — collapsible */}
+            <div style={{ marginTop: 16 }}>
+              <button type="button" onClick={() => setShowAffiliate(v => !v)} style={{
+                width: '100%', background: '#fff', border: '1.5px solid #e2e8f0',
+                borderRadius: 16, padding: '14px 20px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                fontSize: 14, fontWeight: 700, color: '#475569', transition: 'all 0.2s',
+              }}
+                onMouseOver={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.color = '#1d4ed8'; }}
+                onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}
+              >
+                <span>🛒 Hotels, Flüge & Touren buchen</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{showAffiliate ? '▲ Ausblenden' : '▼ Anzeigen'}</span>
+              </button>
+              {showAffiliate && (
+                <AffiliateSection destination={plan.destination} persons={plan.persons} days={plan.days?.length} departureCity={plan.departureCity} />
+              )}
+            </div>
 
             {/* TikTok Spots */}
             {plan.tiktokSpots?.length > 0 && (
@@ -1064,6 +1116,8 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             )}
             {/* Nützliche Phrasen */}
             <PhrasesWidget destination={plan.destination} />
+            {/* Kulturelle Dos & Don'ts */}
+            <DosDontsWidget destination={plan.destination} />
             {/* Notfall-Nummern */}
             <EmergencyWidget destination={plan.destination} />
             {/* Trinkgeld-Info */}
@@ -1094,7 +1148,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div style={{ position: isMobile ? 'static' : 'sticky', top: 80, order: isMobile ? -1 : 0 }}>
+          <div style={{ position: isMobile ? 'static' : 'sticky', top: 80, order: isMobile ? 1 : 0 }}>
             <div style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 2px 16px rgba(0,0,0,0.06)', marginBottom: 14 }}>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', marginBottom: 18 }}>💰 Budget-Übersicht</h3>
 
