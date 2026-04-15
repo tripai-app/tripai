@@ -54,6 +54,35 @@ export default function App() {
   const [streamingTitles, setStreamingTitles] = useState([]);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('tripai_dark') === '1');
   const [formResetKey, setFormResetKey] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // PWA Install-Prompt abfangen
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      // Banner nur zeigen wenn noch nie weggeklickt wurde
+      if (!localStorage.getItem('tripai_install_dismissed')) {
+        setShowInstallBanner(true);
+      }
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setShowInstallBanner(false);
+    setInstallPrompt(null);
+  };
+
+  const dismissInstallBanner = () => {
+    setShowInstallBanner(false);
+    localStorage.setItem('tripai_install_dismissed', '1');
+  };
 
   const toggleDark = () => setDarkMode(d => {
     const next = !d;
@@ -66,14 +95,35 @@ export default function App() {
   // URL-Params beim Start lesen (geteilter Link)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    window.history.replaceState({}, '', window.location.pathname);
+
+    // Supabase UUID-Link: ?plan=UUID
+    const planId = params.get('plan');
+    if (planId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planId)) {
+      setLoading(true);
+      navigate('loading');
+      setPlannedDestination('Reiseplan wird geladen…');
+      fetch(`/api/load-plan?id=${planId}`)
+        .then(r => { if (!r.ok) throw new Error('Nicht gefunden'); return r.json(); })
+        .then(loadedPlan => {
+          setPlan(loadedPlan);
+          navigate('itinerary');
+        })
+        .catch(() => {
+          setError('Plan konnte nicht geladen werden. Er ist möglicherweise abgelaufen.');
+          navigate('planner');
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    // Legacy URL-Params: ?dest=...&days=...
     const dest = params.get('dest');
     if (!dest) return;
-    window.history.replaceState({}, '', window.location.pathname);
     const days = parseInt(params.get('days')) || 5;
     const persons = parseInt(params.get('persons')) || 2;
     const budget = parseInt(params.get('budget')) || 1500;
     const hotel = params.get('hotel') || 'mittel';
-    // If full params shared → auto-generate; otherwise just pre-fill form
     if (params.get('days')) {
       handleGenerate({
         destination: decodeURIComponent(dest), days, persons, budget,
@@ -287,6 +337,21 @@ export default function App() {
       <div style={{ filter: darkMode ? 'invert(92%) hue-rotate(180deg)' : 'none', minHeight: '100vh' }}
            className={darkMode ? 'dark-mode' : ''}>
         <Navbar page={page} onNavigate={navigate} darkMode={darkMode} onToggleDark={toggleDark} onOpenPlan={handleOpenPlan} />
+
+        {/* PWA Install Banner */}
+        {showInstallBanner && (
+          <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: 'linear-gradient(135deg,#1e3a8a,#1d4ed8)', borderRadius: 16, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', maxWidth: 'calc(100vw - 32px)', minWidth: 260, backdropFilter: 'blur(8px)' }}>
+            <span style={{ fontSize: 28, flexShrink: 0 }}>✈️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>TripAI installieren</div>
+              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 1 }}>Offline-Zugriff & Homescreen-Icon</div>
+            </div>
+            <button onClick={handleInstall} style={{ background: '#fff', color: '#1d4ed8', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 800, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+              Installieren
+            </button>
+            <button onClick={dismissInstallBanner} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 18, cursor: 'pointer', flexShrink: 0, padding: 4 }}>×</button>
+          </div>
+        )}
 
         {page === 'home' && (
           <Hero

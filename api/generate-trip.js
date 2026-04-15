@@ -77,6 +77,25 @@ export default async function handler(req) {
   };
   const aktivitaetsPart = aktivitaetsMap[aktivitaetslevel] ? `\nAktivitätslevel: ${aktivitaetsMap[aktivitaetslevel]}` : '';
 
+  // ── Realistische Flugpreise ──
+  // Richtwerte: Abflugstadt → Zielregion → Preisrange
+  const flightPriceHint = (() => {
+    const dest = (destination || '').toLowerCase();
+    const dep = (departureCity || '').toLowerCase();
+    // Fernreisen (Asien, Amerika, Australien, Afrika)
+    const isFern = /japan|tokio|kyoto|bangkok|chiang mai|hanoi|singapur|bali|seoul|peking|shanghai|vietnam|new york|miami|los angeles|chicago|toronto|montreal|havanna|mexiko|buenos aires|sao paulo|kapstadt|nairobi|sydney|australien|dubai|doha/.test(dest);
+    // Mittlere Distanz (Kanarische Inseln, Naher Osten, Nordafrika, Osteuropa)
+    const isMittel = /malediven|hurghada|sharm|antalya|istanbul|athen|santorini|marrakesch|kairo|jordanien|lissabon|porto|barcelona|madrid|london|reykjavik|teneriffa|lanzarote|mallorca|gran canaria|dubrovnik/.test(dest);
+    // Nahziele (Mitteleuropa)
+    const isNah = /amsterdam|prag|budapest|wien|berlin|paris|rom|florenz|zürich|luzern|kopenhagen|stockholm|edinburgh|belgrad|krakau|tiflis/.test(dest);
+
+    if (isFern) return `Flugpreise von deutschen Städten (z.B. Frankfurt, München, Berlin): Economy-Klasse ab ca. 400–800€ pro Person für Direktflüge, 300–600€ für 1-Stopp-Optionen. Langstrecken >10h: 500–1200€. KEINE Preise unter 200€ für Interkontinentalflüge!`;
+    if (isMittel) return `Flugpreise von deutschen Städten: Mittelstrecke 3–5h Flugzeit, Economy ab ca. 80–200€ (Billigflieger), 150–350€ (Linienflug). Charterflüge zu Ferienzielen ab 100€ möglich.`;
+    if (isNah) return `Flugpreise von deutschen Städten: Kurzstrecke 1–3h, Billigflieger ab 30–80€, Linienflüge 80–200€. Frühbucher können 50€+ erreichen.`;
+    // Fallback basierend auf Abflugstadt
+    return `Flugpreise realistisch kalkulieren: Europaziele 40–200€, Nordafrika/Türkei 80–300€, USA/Fernziele 400–1000€. NIEMALS unrealistisch niedrige Preise wie 20€ für Langstrecke.`;
+  })();
+
   // ── Kinder-Kontext ──
   const ageLabels = { baby: '0–2 Jahre', kleinkind: '3–6 Jahre', schulkind: '7–12 Jahre', teenager: '13–17 Jahre' };
   const childrenAgesLabel = childrenAges.map(a => ageLabels[a] || a).join(', ') || 'Kinder';
@@ -126,6 +145,7 @@ Alle ${splitDays} Tage (${splitStartDay}–${effectiveDays}) ausgeben. Echte Ort
     prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
 
 Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${reiseTypPart}${gruppenPart}${essenPart}${aktivitaetsPart}${childrenPromptPart}${routePromptPart}
+${flightPriceHint}
 
 JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
 {"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel1","stars":4,"pricePerNight":90,"location":"Zentrum","highlight":"Top-Lage"},{"name":"Hotel2","stars":3,"pricePerNight":60,"location":"Altstadt","highlight":"Günstig & zentral"}],"flights":[{"airline":"Airline1","type":"Direktflug","duration":"3h","priceFrom":150,"tip":"Frühbucher"},{"airline":"Airline2","type":"1 Stopp","duration":"5h","priceFrom":99,"tip":"Günstigste Option"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}

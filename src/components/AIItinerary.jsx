@@ -595,6 +595,41 @@ const RAIN_ALTERNATIVES = [
   '🍷 Weinprobe oder Craft-Beer-Bar',
 ];
 
+function QrModal({ plan, onClose, getSupabaseShareUrl, getFallbackShareUrl }) {
+  const [qrUrl, setQrUrl] = useState(getFallbackShareUrl());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSupabaseShareUrl().then(url => {
+      if (!cancelled) { setQrUrl(url); setLoading(false); }
+    }).catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 24, padding: '28px 32px', textAlign: 'center', maxWidth: 280, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>📱 Plan teilen</div>
+        <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 18 }}>{plan.destination} · {plan.days?.length} Tage</div>
+        {loading ? (
+          <div style={{ width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', borderRadius: 12, background: '#f8fafc', border: '3px solid #f1f5f9', fontSize: 32 }}>⏳</div>
+        ) : (
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=0f172a&qzone=2`}
+            alt="QR Code"
+            style={{ width: 200, height: 200, borderRadius: 12, border: '3px solid #f1f5f9', display: 'block', margin: '0 auto' }}
+          />
+        )}
+        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 10, wordBreak: 'break-all', maxHeight: 36, overflow: 'hidden' }}>{qrUrl}</div>
+        <button onClick={() => { navigator.clipboard?.writeText(qrUrl); }} style={{ marginTop: 10, width: '100%', background: '#eff6ff', border: 'none', borderRadius: 10, padding: '10px', fontWeight: 700, cursor: 'pointer', fontSize: 13, color: '#1d4ed8' }}>📋 Link kopieren</button>
+        <button onClick={onClose} style={{ marginTop: 8, width: '100%', background: '#f1f5f9', border: 'none', borderRadius: 10, padding: '10px', fontWeight: 700, cursor: 'pointer', fontSize: 13, color: '#374151' }}>Schließen</button>
+      </div>
+    </div>
+  );
+}
+
 function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
   const doneCount = day.slots?.filter((_, i) => checkedSlots?.[`${dayIdx}_${i}`]).length || 0;
   const totalCount = day.slots?.length || 0;
@@ -699,6 +734,8 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
   const [showBackTop, setShowBackTop] = useState(false);
   const [mobileTab, setMobileTab] = useState('plan');
   const [showAffiliate, setShowAffiliate] = useState(false);
+  const [savedPlanId, setSavedPlanId] = useState(null);
+  const [shareLoading, setShareLoading] = useState(false);
 
   // Konfetti on mount
   useEffect(() => {
@@ -784,7 +821,8 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
     showToast('📅 Kalender exportiert!');
   };
 
-  const getShareUrl = () => {
+  // Fallback-URL mit URL-Parametern (ohne Supabase)
+  const getFallbackShareUrl = () => {
     const p = new URLSearchParams({
       dest: plan.destination,
       days: plan.days?.length || 5,
@@ -795,8 +833,29 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
     return `https://tripai-omega.vercel.app/?${p.toString()}`;
   };
 
+  // Plan zu Supabase speichern und echte Share-URL holen
+  const getSupabaseShareUrl = async () => {
+    if (savedPlanId) return `https://tripai-omega.vercel.app/?plan=${savedPlanId}`;
+    try {
+      const res = await fetch('/api/save-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(plan),
+      });
+      if (!res.ok) throw new Error('save failed');
+      const { id } = await res.json();
+      if (id) {
+        setSavedPlanId(id);
+        return `https://tripai-omega.vercel.app/?plan=${id}`;
+      }
+    } catch {}
+    return getFallbackShareUrl();
+  };
+
   const handleShare = async () => {
-    const url = getShareUrl();
+    setShareLoading(true);
+    const url = await getSupabaseShareUrl();
+    setShareLoading(false);
     const highlights = plan.days?.slice(0, 3).map(d => d.title).filter(Boolean).join(', ') || '';
     const shareData = {
       title: `${plan.emoji || '✈️'} ${plan.days?.length}-Tage Reiseplan: ${plan.destination}`,
@@ -899,16 +958,20 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <button onClick={handleFavorite} style={{ background: isFav ? '#fff1f2' : '#f8fafc', border: `1px solid ${isFav ? '#fecaca' : '#e2e8f0'}`, borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: isFav ? '#dc2626' : '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 {isFav ? '❤️' : '🤍'} {isFav ? 'Gespeichert' : 'Speichern'}
               </button>
-              <button onClick={handleShare} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
-                🔗 Teilen
+              <button onClick={handleShare} disabled={shareLoading} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: shareLoading ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s', opacity: shareLoading ? 0.7 : 1 }}>
+                {shareLoading ? '⏳' : '🔗'} {shareLoading ? 'Link wird erstellt…' : 'Teilen'}
               </button>
-              <a href={`https://wa.me/?text=${encodeURIComponent(`${plan.emoji || '✈️'} ${plan.days?.length}-Tage Reiseplan: ${plan.destination}\n\n${plan.days?.slice(0,3).map(d=>`Tag ${d.dayNumber}: ${d.title}`).join('\n') || ''}\n...\n\nMit TripAI erstellt 👉 ${getShareUrl()}`)}`} target="_blank" rel="noopener noreferrer" style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', transition: 'all 0.2s' }}>
+              <button onClick={async () => {
+                const url = await getSupabaseShareUrl();
+                const text = `${plan.emoji || '✈️'} ${plan.days?.length}-Tage Reiseplan: ${plan.destination}\n\n${plan.days?.slice(0,3).map(d=>`Tag ${d.dayNumber}: ${d.title}`).join('\n') || ''}\n...\n\nMit TripAI erstellt 👉 ${url}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+              }} style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 💬 WhatsApp
-              </a>
+              </button>
               <button onClick={handlePrint} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 📄 PDF
               </button>
-              <button onClick={() => setShowQr(true)} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+              <button onClick={async () => { setShowQr(true); }} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 📱 QR-Code
               </button>
               <button onClick={handleCalendarExport} className="no-print" style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
@@ -1287,19 +1350,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
       </div>
       {/* QR Modal */}
       {showQr && (
-        <div onClick={() => setShowQr(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 24, padding: '28px 32px', textAlign: 'center', maxWidth: 280, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>📱 Plan teilen</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 18 }}>{plan.destination} · {plan.days?.length} Tage</div>
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getShareUrl())}&bgcolor=ffffff&color=0f172a&qzone=2`}
-              alt="QR Code"
-              style={{ width: 200, height: 200, borderRadius: 12, border: '3px solid #f1f5f9', display: 'block', margin: '0 auto' }}
-            />
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 12 }}>Mit Handy abscannen oder Screenshot machen</div>
-            <button onClick={() => setShowQr(false)} style={{ marginTop: 18, width: '100%', background: '#f1f5f9', border: 'none', borderRadius: 12, padding: 12, fontWeight: 700, cursor: 'pointer', fontSize: 14, color: '#374151' }}>Schließen</button>
-          </div>
-        </div>
+        <QrModal plan={plan} onClose={() => setShowQr(false)} getSupabaseShareUrl={getSupabaseShareUrl} getFallbackShareUrl={getFallbackShareUrl} />
       )}
 
       {/* PRINT LAYOUT — hidden on screen, shown when printing */}

@@ -4,7 +4,7 @@
   "description": "Dein KI-Reiseplaner: Kompletter Urlaub in Sekunden planen — Hotels, Restaurants, Geheimtipps & Budget.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#eef2ff",
+  "background_color": "#0f172a",
   "theme_color": "#2563eb",
   "lang": "de",
   "orientation": "portrait-primary",
@@ -13,9 +13,24 @@
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
   "categories": ["travel", "lifestyle"],
-  "screenshots": []
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Neue Reise planen",
+      "short_name": "Planen",
+      "description": "Direkt zum Reiseplaner",
+      "url": "/",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
 }
