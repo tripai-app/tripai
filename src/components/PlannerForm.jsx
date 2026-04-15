@@ -133,8 +133,8 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
   const budgetPerPerson = Math.round(form.budget / form.persons);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#eef2ff' }}>
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 20px 60px' }}>
+    <div style={{ minHeight: '100vh', background: '#eef2ff', overflowX: 'hidden' }}>
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 20px 60px', width: '100%', boxSizing: 'border-box' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 36 }}>
@@ -186,16 +186,18 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
             <button type="submit" disabled={isLoading || !form.destination.trim()} style={{
               background: isLoading ? '#93c5fd' : 'linear-gradient(135deg,#2563eb,#0ea5e9)',
               color: '#fff', border: 'none', borderRadius: 14,
-              padding: '12px 22px', fontWeight: 800, fontSize: 15,
+              padding: isMobile ? '12px 14px' : '12px 22px',
+              fontWeight: 800, fontSize: isMobile ? 13 : 15,
               cursor: isLoading ? 'wait' : 'pointer',
               whiteSpace: 'nowrap', flexShrink: 0,
               boxShadow: isLoading ? 'none' : '0 4px 14px rgba(37,99,235,0.35)',
               transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: 7,
+              display: 'flex', alignItems: 'center', gap: 6,
+              minWidth: 0,
             }}>
               {isLoading
-                ? <><span style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }}>⟳</span> Planen…</>
-                : <>Plan erstellen ✨</>}
+                ? <><span style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }}>⟳</span>{isMobile ? '' : ' Planen…'}</>
+                : <>{isMobile ? '✨' : 'Plan erstellen ✨'}</>}
             </button>
           </div>
 

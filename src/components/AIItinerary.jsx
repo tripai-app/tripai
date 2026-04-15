@@ -784,12 +784,23 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
     showToast('📅 Kalender exportiert!');
   };
 
+  const getShareUrl = () => {
+    const p = new URLSearchParams({
+      dest: plan.destination,
+      days: plan.days?.length || 5,
+      persons: plan.persons || 2,
+      budget: plan.budget || 1500,
+      hotel: plan.hotelCategory || 'mittel',
+    });
+    return `https://tripai-omega.vercel.app/?${p.toString()}`;
+  };
+
   const handleShare = async () => {
-    const params = new URLSearchParams({ dest: plan.destination });
-    const url = `https://tripai-omega.vercel.app/?${params.toString()}`;
+    const url = getShareUrl();
+    const highlights = plan.days?.slice(0, 3).map(d => d.title).filter(Boolean).join(', ') || '';
     const shareData = {
-      title: `TripAI — ${plan.days?.length}-Tage Reiseplan: ${plan.destination}`,
-      text: `Schau dir meinen KI-Reiseplan für ${plan.destination} an! ${plan.emoji || '✈️'}`,
+      title: `${plan.emoji || '✈️'} ${plan.days?.length}-Tage Reiseplan: ${plan.destination}`,
+      text: `Schau dir meinen KI-Reiseplan für ${plan.destination} an! ${highlights ? `(${highlights}…)` : ''} Erstellt mit TripAI ✨`,
       url,
     };
     try {
@@ -822,22 +833,24 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
   const handleFavorite = () => {
     try {
       const favs = JSON.parse(localStorage.getItem('tripai_favorites') || '[]');
+      let updated;
       if (isFav) {
-        const updated = favs.filter(f => f.destination !== plan.destination);
+        updated = favs.filter(f => f.destination !== plan.destination);
         localStorage.setItem('tripai_favorites', JSON.stringify(updated));
         setIsFav(false);
         showToast('💔 Aus Favoriten entfernt');
       } else {
-        favs.unshift({ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE'), fullPlan: plan });
-        localStorage.setItem('tripai_favorites', JSON.stringify(favs.slice(0, 20)));
+        updated = [{ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE'), fullPlan: plan }, ...favs].slice(0, 20);
+        localStorage.setItem('tripai_favorites', JSON.stringify(updated));
         setIsFav(true);
         showToast('❤️ Zu Favoriten hinzugefügt!');
       }
+      window.dispatchEvent(new CustomEvent('favoritesCountChanged', { detail: updated.length }));
     } catch { showToast('Fehler beim Speichern'); }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div className="no-print" style={{ minHeight: '100vh', background: '#f8fafc' }}>
 
       {/* HEADER */}
       <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
@@ -889,7 +902,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <button onClick={handleShare} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 🔗 Teilen
               </button>
-              <a href={`https://wa.me/?text=${encodeURIComponent(`Schau dir meinen ${plan.days?.length}-Tage Reiseplan für ${plan.destination} an! 🌍✈️\nhttps://tripai-omega.vercel.app/?dest=${encodeURIComponent(plan.destination)}`)}`} target="_blank" rel="noopener noreferrer" style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', transition: 'all 0.2s' }}>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`${plan.emoji || '✈️'} ${plan.days?.length}-Tage Reiseplan: ${plan.destination}\n\n${plan.days?.slice(0,3).map(d=>`Tag ${d.dayNumber}: ${d.title}`).join('\n') || ''}\n...\n\nMit TripAI erstellt 👉 ${getShareUrl()}`)}`} target="_blank" rel="noopener noreferrer" style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', transition: 'all 0.2s' }}>
                 💬 WhatsApp
               </a>
               <button onClick={handlePrint} className="no-print" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
@@ -939,7 +952,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
                 <div style={{ width: 64, height: 5, background: '#e2e8f0', borderRadius: 99 }}>
                   <div style={{ height: '100%', width: `${(checkedCount / totalSlots) * 100}%`, background: '#22c55e', borderRadius: 99, transition: 'width 0.3s' }} />
                 </div>
-                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{checkedCount}/{totalSlots} erledigt</span>
+                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }} title="Aktivitäten die du bereits abgehakt hast">✓ {checkedCount}/{totalSlots} Aktivitäten</span>
               </div>
             )}
           </div>
@@ -1279,7 +1292,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>📱 Plan teilen</div>
             <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 18 }}>{plan.destination} · {plan.days?.length} Tage</div>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://tripai-omega.vercel.app/?dest=${encodeURIComponent(plan.destination)}`)}&bgcolor=ffffff&color=0f172a&qzone=2`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getShareUrl())}&bgcolor=ffffff&color=0f172a&qzone=2`}
               alt="QR Code"
               style={{ width: 200, height: 200, borderRadius: 12, border: '3px solid #f1f5f9', display: 'block', margin: '0 auto' }}
             />
@@ -1446,7 +1459,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         @keyframes fadeIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
         .leaflet-container { font-family: inherit; }
         @media print {
-          body > * { display: none !important; }
+          .no-print { display: none !important; }
           .print-only { display: block !important; }
           .print-only * { box-shadow: none !important; }
           @page { margin: 15mm; size: A4; }

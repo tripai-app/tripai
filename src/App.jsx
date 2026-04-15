@@ -67,11 +67,26 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const dest = params.get('dest');
-    if (dest) {
+    if (!dest) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    const days = parseInt(params.get('days')) || 5;
+    const persons = parseInt(params.get('persons')) || 2;
+    const budget = parseInt(params.get('budget')) || 1500;
+    const hotel = params.get('hotel') || 'mittel';
+    // If full params shared → auto-generate; otherwise just pre-fill form
+    if (params.get('days')) {
+      handleGenerate({
+        destination: decodeURIComponent(dest), days, persons, budget,
+        hotelCategory: hotel, interests: ['kultur', 'essen'],
+        includeTiktok: true, includeHiddenGems: true, wishes: '',
+        withChildren: false, childrenAges: [], isRoundtrip: false, roundtripCities: [],
+        reiseTyp: '', gruppenTyp: '', essenPrefs: [], essenStil: [], aktivitaetslevel: 'ausgewogen',
+      });
+    } else {
       setDefaultDestination(decodeURIComponent(dest));
       navigate('planner');
-      window.history.replaceState({}, '', window.location.pathname);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStartPlanning = () => { setDefaultDestination(''); navigate('planner'); };
@@ -224,7 +239,8 @@ export default function App() {
       if (!formData.isRoundtrip && formData.days > 7) {
         // ── Split: erst Tage 1-7 (mit vollem Plan), dann 8-N ──
         setLoadingMsg('Tage 1–7 werden geplant…');
-        const first = await callApi({ ...formData, days: 7 }, onChunk);
+        // noFinalDay: signalisiert generate-trip.js, dass Tag 7 NICHT der Abreisetag ist
+        const first = await callApi({ ...formData, days: 7, totalDays: formData.days }, onChunk);
         if (!first.plan) throw new Error('Erster Planabschnitt fehlgeschlagen.');
 
         accumulated = '';

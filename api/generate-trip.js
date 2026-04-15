@@ -33,7 +33,7 @@ export default async function handler(req) {
     // Rundreise-Feature
     isRoundtrip = false, roundtripCities = [],
     // Split-Modus: nur bestimmte Tage generieren
-    splitMode = false, splitStartDay = 1,
+    splitMode = false, splitStartDay = 1, totalDays = null,
     // Neue Felder
     reiseTyp = '', gruppenTyp = '', essenPrefs = [], essenStil = [],
     aktivitaetslevel = 'ausgewogen',
@@ -115,6 +115,8 @@ export default async function handler(req) {
 
 Fortsetzung: ${destinationStr}, ${effectiveDays} Tage gesamt, ${persons} Personen, ${budget}€, Interessen: ${interestsList || 'Allgemein'}${travelDate ? `, Reisedatum: ${travelDate}` : ''}${childrenPromptPart}
 
+WICHTIG: Dies sind die Folgetage einer längeren Reise. Tage ${splitStartDay}–${effectiveDays - 1} sind NORMALE Reisetage (keine Abreise-Thematik!). Nur Tag ${effectiveDays} ist der echte Abreise-/Rückreisetag. Tage ${splitStartDay}–${effectiveDays - 1} sollen volle Aktivitätsprogramme haben wie alle anderen Tage. Keine "Letzter Tag" oder "Abreise" Phrasen außer in Tag ${effectiveDays}.
+
 Generiere NUR die Tage ${splitStartDay} bis ${effectiveDays} als JSON-Array:
 [{"dayNumber":${splitStartDay}${roundtripDaySchema},"title":"Titel","theme":"🗺️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}]
 
@@ -128,7 +130,7 @@ Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}�
 JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
 {"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel1","stars":4,"pricePerNight":90,"location":"Zentrum","highlight":"Top-Lage"},{"name":"Hotel2","stars":3,"pricePerNight":60,"location":"Altstadt","highlight":"Günstig & zentral"}],"flights":[{"airline":"Airline1","type":"Direktflug","duration":"3h","priceFrom":150,"tip":"Frühbucher"},{"airline":"Airline2","type":"1 Stopp","duration":"5h","priceFrom":99,"tip":"Günstigste Option"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
 
-WICHTIG: Immer genau ${effectiveDays} Tage ausgeben — nicht weniger! Mindestens 2 verschiedene Hotels. Mindestens 2 verschiedene Flugoptionen. Echte Ortsnamen.`;
+WICHTIG: Immer genau ${effectiveDays} Tage ausgeben — nicht weniger! Mindestens 2 verschiedene Hotels. Mindestens 2 verschiedene Flugoptionen. Echte Ortsnamen.${totalDays && totalDays > effectiveDays ? ` Dies ist NUR der erste Teil einer ${totalDays}-Tage-Reise — Tag ${effectiveDays} ist KEIN Abreisetag, sondern ein normaler Reisetag mit vollem Programm!` : ''}`;
   }
 
   // Anthropic mit stream:true aufrufen
