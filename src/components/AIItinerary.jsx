@@ -3,6 +3,7 @@ import AffiliateSection from './AffiliateSection';
 import { getAmazonLink } from '../data/affiliateConfig';
 import useIsMobile from '../hooks/useIsMobile';
 import { CountdownWidget, PhrasesWidget, EmergencyWidget, TippingWidget, BestTimeWidget, DosDontsWidget } from './TravelWidgets';
+import PlanChatbot from './PlanChatbot';
 
 // Zählt animiert von 0 auf Zielwert hoch
 function useCountUp(target, duration = 900) {
@@ -312,9 +313,10 @@ function WeatherAndMap({ destination, travelDate }) {
       <div style={{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', marginBottom: 14 }}>
         <iframe
           title={`Karte ${destination}`}
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.longitude - 0.15},${geo.latitude - 0.15},${geo.longitude + 0.15},${geo.latitude + 0.15}&layer=mapnik&marker=${geo.latitude},${geo.longitude}`}
-          style={{ width: '100%', height: 200, border: 'none', display: 'block' }}
+          src={`https://maps.google.com/maps?q=${encodeURIComponent(destination)}&z=13&output=embed`}
+          style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
           loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
         />
         <div style={{ padding: '10px 16px' }}>
           <a href={`https://www.google.com/maps/search/${encodeURIComponent(destination)}`} target="_blank" rel="noopener noreferrer"
@@ -701,7 +703,7 @@ function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
 
 export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegenerate, onRegenerateWithBudget }) {
   const isMobile = useIsMobile();
-  const [toast, setToast] = useState('');
+  const [toast, setToast] = useState(null); // { msg, type: 'success'|'error'|'info'|'warning' }
   const [activeDay, setActiveDay] = useState(0);
   const [checkedSlots, setCheckedSlots] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`tripai_checked_${plan?.destination}_${plan?.days?.length}`) || '{}'); } catch { return {}; }
@@ -766,9 +768,9 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
   const overBudget = plan.costs?.gesamt > plan.budget;
   const diff = Math.abs(plan.budget - (plan.costs?.gesamt || 0));
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 2500);
+  const showToast = (msg, type = 'info') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const toggleSlot = (dayIdx, slotIdx) => {
@@ -818,7 +820,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
     a.href = URL.createObjectURL(blob);
     a.download = `TripAI-${plan.destination}.ics`;
     a.click();
-    showToast('📅 Kalender exportiert!');
+    showToast('📅 Kalender exportiert!', 'success');
   };
 
   // Fallback-URL mit URL-Parametern (ohne Supabase)
@@ -867,12 +869,12 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         await navigator.share(shareData);
       } else {
         await navigator.clipboard?.writeText(url);
-        showToast('🔗 Link kopiert!');
+        showToast('🔗 Link kopiert!', 'success');
       }
     } catch (e) {
       if (e.name !== 'AbortError') {
         await navigator.clipboard?.writeText(url);
-        showToast('🔗 Link kopiert!');
+        showToast('🔗 Link kopiert!', 'success');
       }
     }
   };
@@ -886,7 +888,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
       ratings[plan.destination] = stars;
       localStorage.setItem('tripai_ratings', JSON.stringify(ratings));
     } catch {}
-    showToast(`${'⭐'.repeat(stars)} Danke für deine Bewertung!`);
+    showToast(`${'⭐'.repeat(stars)} Danke für deine Bewertung!`, 'success');
   };
 
   const handleFavorite = () => {
@@ -897,15 +899,15 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         updated = favs.filter(f => f.destination !== plan.destination);
         localStorage.setItem('tripai_favorites', JSON.stringify(updated));
         setIsFav(false);
-        showToast('💔 Aus Favoriten entfernt');
+        showToast('💔 Aus Favoriten entfernt', 'warning');
       } else {
         updated = [{ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE'), fullPlan: plan }, ...favs].slice(0, 20);
         localStorage.setItem('tripai_favorites', JSON.stringify(updated));
         setIsFav(true);
-        showToast('❤️ Zu Favoriten hinzugefügt!');
+        showToast('❤️ Zu Favoriten hinzugefügt!', 'success');
       }
       window.dispatchEvent(new CustomEvent('favoritesCountChanged', { detail: updated.length }));
-    } catch { showToast('Fehler beim Speichern'); }
+    } catch { showToast('Fehler beim Speichern', 'error'); }
   };
 
   return (
@@ -977,6 +979,19 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
               <button onClick={handleCalendarExport} className="no-print" style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
                 📅 Kalender
               </button>
+              <button className="no-print" onClick={async () => {
+                if (!('Notification' in window)) { showToast('Notifications nicht unterstützt', 'error'); return; }
+                if (Notification.permission === 'granted') { showToast('🔔 Benachrichtigungen bereits aktiv!', 'info'); return; }
+                const perm = await Notification.requestPermission();
+                if (perm === 'granted') {
+                  new Notification('TripAI ✈️', { body: `Dein ${plan.destination}-Plan ist gespeichert!`, icon: '/favicon.svg' });
+                  showToast('🔔 Benachrichtigungen aktiviert!', 'success');
+                } else {
+                  showToast('Benachrichtigungen abgelehnt', 'warning');
+                }
+              }} style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 50, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}>
+                🔔 Alerts
+              </button>
               <div style={{ background: overBudget ? '#fff1f2' : '#f0fdf4', border: `1px solid ${overBudget ? '#fecaca' : '#86efac'}`, borderRadius: 50, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16 }}>{overBudget ? '⚠️' : '✅'}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: overBudget ? '#dc2626' : '#16a34a' }}>
@@ -986,11 +1001,20 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
             </div>
 
             {/* Toast */}
-            {toast && (
-              <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: 50, fontSize: 14, fontWeight: 700, zIndex: 9999, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', animation: 'slideIn 0.3s ease' }}>
-                {toast}
-              </div>
-            )}
+            {toast && (() => {
+              const colors = {
+                success: { bg: '#166534', border: '#22c55e', icon: '✅' },
+                error:   { bg: '#991b1b', border: '#f87171', icon: '❌' },
+                warning: { bg: '#92400e', border: '#fbbf24', icon: '⚠️' },
+                info:    { bg: '#1e3a8a', border: '#60a5fa', icon: '💡' },
+              };
+              const c = colors[toast.type] || colors.info;
+              return (
+                <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: c.bg, color: '#fff', padding: '12px 20px', borderRadius: 50, fontSize: 13, fontWeight: 700, zIndex: 9999, boxShadow: `0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px ${c.border}33`, animation: 'slideIn 0.3s ease', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap', maxWidth: 'calc(100vw - 32px)' }}>
+                  <span>{c.icon}</span><span>{toast.msg}</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
         </div>
@@ -1352,6 +1376,11 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
       {showQr && (
         <QrModal plan={plan} onClose={() => setShowQr(false)} getSupabaseShareUrl={getSupabaseShareUrl} getFallbackShareUrl={getFallbackShareUrl} />
       )}
+
+      {/* KI-Chatbot */}
+      <div className="no-print">
+        <PlanChatbot plan={plan} />
+      </div>
 
       {/* PRINT LAYOUT — hidden on screen, shown when printing */}
       <div className="print-only" style={{ display: 'none' }}>

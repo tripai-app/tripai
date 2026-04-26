@@ -236,28 +236,46 @@ export default function PlannerForm({ defaultDestination, onGenerate, isLoading,
           </div>
 
           {/* Departure City */}
-          <div style={{
-            background: '#fff', borderRadius: 20,
-            padding: '6px 8px 6px 20px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-            display: 'flex', alignItems: 'center', gap: 12,
-            border: '2px solid transparent', transition: 'border-color 0.2s',
-          }}
-            onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
-            onBlurCapture={e => e.currentTarget.style.borderColor = 'transparent'}
-          >
-            <span style={{ fontSize: 20 }}>🛫</span>
-            <input
-              type="text"
-              value={form.departureCity}
-              onChange={e => setForm(f => ({ ...f, departureCity: e.target.value }))}
-              placeholder="Abflugstadt (optional) — z.B. München, Berlin…"
-              style={{
-                flex: 1, border: 'none', outline: 'none',
-                fontSize: 15, fontWeight: 500, color: '#0f172a',
-                background: 'transparent', padding: '14px 0',
-              }}
-            />
+          <div>
+            <div style={{
+              background: '#fff', borderRadius: 20,
+              padding: '6px 8px 6px 20px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+              display: 'flex', alignItems: 'center', gap: 12,
+              border: '2px solid transparent', transition: 'border-color 0.2s',
+            }}
+              onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
+              onBlurCapture={e => e.currentTarget.style.borderColor = 'transparent'}
+            >
+              <span style={{ fontSize: 20 }}>🛫</span>
+              <input
+                type="text"
+                value={form.departureCity}
+                onChange={e => setForm(f => ({ ...f, departureCity: e.target.value }))}
+                placeholder="Abflugstadt (optional) — z.B. München, Berlin…"
+                style={{
+                  flex: 1, border: 'none', outline: 'none',
+                  fontSize: 15, fontWeight: 500, color: '#0f172a',
+                  background: 'transparent', padding: '14px 0',
+                }}
+              />
+              {form.departureCity && (
+                <button type="button" onClick={() => setForm(f => ({ ...f, departureCity: '' }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, padding: '0 8px 0 0' }}>×</button>
+              )}
+            </div>
+            {/* Schnellauswahl Flughäfen */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, paddingLeft: 4 }}>
+              {['🇩🇪 Frankfurt', '🇩🇪 München', '🇩🇪 Berlin', '🇦🇹 Wien', '🇨🇭 Zürich', '🇩🇪 Hamburg', '🇩🇪 Düsseldorf'].map(city => {
+                const name = city.replace(/^.{3}/, '').trim();
+                const active = form.departureCity === name;
+                return (
+                  <button key={city} type="button" onClick={() => setForm(f => ({ ...f, departureCity: active ? '' : name }))}
+                    style={{ background: active ? '#eff6ff' : '#f8fafc', border: `1.5px solid ${active ? '#2563eb' : '#e2e8f0'}`, borderRadius: 50, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: active ? '#1d4ed8' : '#64748b', cursor: 'pointer', transition: 'all 0.15s' }}>
+                    {city}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {isLoading && (

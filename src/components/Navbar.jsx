@@ -1,8 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import useIsMobile from '../hooks/useIsMobile';
+import { getUser, signOut } from '../utils/auth';
+import AuthModal from './AuthModal';
+
+// Auto-Tags für gespeicherte Reisen generieren
+function getAutoTags(fav) {
+  const dest = (fav.destination || '').toLowerCase();
+  const tags = [];
+  if (/bali|bangkok|chiang mai|hanoi|singapur|tokio|kyoto|seoul|vietnam|japan|indonesia/.test(dest)) tags.push('🌏 Asien');
+  else if (/new york|miami|los angeles|kanada|mexiko|havanna|argentinien|chicago/.test(dest)) tags.push('🌎 Amerika');
+  else if (/dubai|marrakesch|kairo|istanbul|athen|santorini|hurghada|antalya/.test(dest)) tags.push('🌍 Orient');
+  else if (/kapstadt|nairobi|malediven|sydney|australien/.test(dest)) tags.push('🌍 Fernziel');
+  else tags.push('🇪🇺 Europa');
+  if ((fav.budget || 0) < 600) tags.push('💸 Budget');
+  else if ((fav.budget || 0) > 2500) tags.push('👑 Luxus');
+  if ((fav.days || 0) <= 3) tags.push('⚡ Kurztrip');
+  else if ((fav.days || 0) >= 10) tags.push('🗺️ Lange Reise');
+  return tags;
+}
 
 function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
   const [favs, setFavs] = useState([]);
+  const [activeTag, setActiveTag] = useState(null);
   const ref = useRef(null);
   const isMobile = useIsMobile();
 
@@ -18,7 +37,6 @@ function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
-  // Badge-Count sofort aktualisieren wenn sich favs ändern
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('favoritesCountChanged', { detail: favs.length }));
   }, [favs]);
@@ -40,26 +58,29 @@ function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('tripai_cache_'));
     keys.forEach(k => localStorage.removeItem(k));
     onClose();
-    // kleines Feedback via title-flash
     const orig = document.title;
     document.title = '✅ Cache geleert!';
     setTimeout(() => { document.title = orig; }, 2000);
   };
 
+  // Alle einzigartigen Tags sammeln
+  const allTags = [...new Set(favs.flatMap(f => getAutoTags(f)))];
+  const filteredFavs = activeTag ? favs.filter(f => getAutoTags(f).includes(activeTag)) : favs;
+
   const menuContent = (
     <div ref={ref} style={{
       background: '#fff',
       borderRadius: isMobile ? '20px 20px 0 0' : 18,
-      width: isMobile ? '100%' : 310,
+      width: isMobile ? '100%' : 320,
       boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
       border: isMobile ? 'none' : '1px solid #f1f5f9',
       overflow: 'hidden',
-      maxHeight: isMobile ? '85vh' : 'none',
+      maxHeight: isMobile ? '85vh' : 520,
       display: 'flex', flexDirection: 'column',
     }}>
       {/* Header */}
       <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>❤️ Gespeicherte Reisen</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>❤️ Gespeicherte Reisen <span style={{ color: '#94a3b8', fontWeight: 500 }}>({favs.length})</span></div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {favs.length > 0 && (
             <button onClick={removeAll} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#f87171', fontWeight: 600, padding: '2px 6px' }}>
@@ -72,32 +93,51 @@ function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
         </div>
       </div>
 
+      {/* Tag-Filter */}
+      {allTags.length > 1 && (
+        <div style={{ padding: '8px 14px', display: 'flex', gap: 6, flexWrap: 'wrap', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
+          <button onClick={() => setActiveTag(null)} style={{ background: !activeTag ? '#eff6ff' : '#f8fafc', border: `1.5px solid ${!activeTag ? '#2563eb' : '#e2e8f0'}`, borderRadius: 50, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: !activeTag ? '#1d4ed8' : '#64748b', cursor: 'pointer' }}>
+            Alle
+          </button>
+          {allTags.map(tag => (
+            <button key={tag} onClick={() => setActiveTag(activeTag === tag ? null : tag)} style={{ background: activeTag === tag ? '#eff6ff' : '#f8fafc', border: `1.5px solid ${activeTag === tag ? '#2563eb' : '#e2e8f0'}`, borderRadius: 50, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: activeTag === tag ? '#1d4ed8' : '#64748b', cursor: 'pointer' }}>
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Favoriten-Liste */}
       <div style={{ overflowY: 'auto', flex: 1 }}>
-        {favs.length === 0 ? (
+        {filteredFavs.length === 0 ? (
           <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-            Noch keine Reisen gespeichert.<br />
-            <span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>Drücke ❤️ nach dem Generieren.</span>
+            {favs.length === 0 ? (
+              <>Noch keine Reisen gespeichert.<br /><span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>Drücke ❤️ nach dem Generieren.</span></>
+            ) : 'Keine Reisen mit diesem Filter.'}
           </div>
         ) : (
-          favs.map((f, i) => (
-            <div key={i} style={{ padding: '12px 20px', borderBottom: i < favs.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+          filteredFavs.map((f, i) => (
+            <div key={i} style={{ padding: '12px 20px', borderBottom: i < filteredFavs.length - 1 ? '1px solid #f8fafc' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 22 }}>{f.emoji || '✈️'}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.destination}</div>
                   <div style={{ fontSize: 11, color: '#94a3b8' }}>{f.days} Tage · {f.persons} Pers. · {f.budget?.toLocaleString('de-DE')}€</div>
-                  <div style={{ fontSize: 10, color: '#cbd5e1' }}>{f.date}</div>
+                  <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                    {getAutoTags(f).map(tag => (
+                      <span key={tag} style={{ background: '#f1f5f9', borderRadius: 50, padding: '2px 8px', fontSize: 10, fontWeight: 600, color: '#64748b' }}>{tag}</span>
+                    ))}
+                  </div>
                 </div>
                 <button onClick={() => remove(f.destination)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5', fontSize: 16, padding: 4, flexShrink: 0 }}>✕</button>
               </div>
               {f.fullPlan && (
                 <button onClick={() => { onOpenPlan(f.fullPlan); onClose(); }} style={{
-                  marginTop: 8, width: '100%', background: '#f8fafc', border: '1px solid #e2e8f0',
-                  borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700,
-                  color: '#2563eb', cursor: 'pointer', textAlign: 'center',
+                  marginTop: 8, width: '100%', background: 'linear-gradient(135deg,#eff6ff,#e0f2fe)', border: '1px solid #bfdbfe',
+                  borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 700,
+                  color: '#1d4ed8', cursor: 'pointer', textAlign: 'center',
                 }}>
-                  Plan anzeigen →
+                  ✈️ Plan öffnen →
                 </button>
               )}
             </div>
@@ -136,7 +176,9 @@ function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
 
 export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpenPlan }) {
   const [showFavs, setShowFavs] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [favCount, setFavCount] = useState(0);
+  const [user, setUser] = useState(() => getUser());
   const active = page === 'planner' || page === 'loading';
 
   useEffect(() => {
@@ -188,6 +230,16 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
             {darkMode ? '☀️' : '🌙'}
           </button>
 
+          {/* Login/User Button */}
+          <button onClick={() => setShowAuth(true)} title={user ? user.email : 'Anmelden'} style={{
+            background: user ? '#f0fdf4' : '#f8fafc',
+            border: `1px solid ${user ? '#86efac' : '#e2e8f0'}`,
+            borderRadius: 50, padding: '7px 12px',
+            cursor: 'pointer', fontSize: 15, lineHeight: 1, transition: 'all 0.2s',
+          }}>
+            {user ? '🟢' : '👤'}
+          </button>
+
           <button onClick={() => setShowFavs(v => !v)} aria-label="Gespeicherte Reisen" style={{
             background: showFavs ? '#fff1f2' : '#f8fafc',
             border: `1px solid ${showFavs ? '#fecaca' : '#e2e8f0'}`,
@@ -213,6 +265,7 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
         </div>
 
         {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onOpenPlan={onOpenPlan} />}
+        {showAuth && <AuthModal onClose={() => setShowAuth(false)} onAuthChange={() => setUser(getUser())} />}
       </div>
     </nav>
   );
