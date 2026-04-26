@@ -62,3 +62,58 @@ export function getSession() {
 export function getUser() {
   return getSession()?.user || null;
 }
+
+// ── Favoriten-Sync mit Supabase ──
+
+function authHeaders() {
+  const session = getSession();
+  if (!session) return null;
+  return {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${session.access_token}`,
+  };
+}
+
+export async function syncFavoritesToCloud(favs) {
+  const h = authHeaders();
+  if (!h) return;
+  const user = getUser();
+  if (!user) return;
+
+  // Alle bestehenden Einträge des Users löschen, dann neu anlegen
+  await fetch(`${SUPABASE_URL}/rest/v1/user_favorites?user_id=eq.${user.id}`, {
+    method: 'DELETE', headers: h,
+  }).catch(() => {});
+
+  if (favs.length === 0) return;
+
+  const rows = favs.map(f => ({
+    user_id: user.id,
+    destination: f.destination,
+    plan: f,
+  }));
+
+  await fetch(`${SUPABASE_URL}/rest/v1/user_favorites`, {
+    method: 'POST',
+    headers: { ...h, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(rows),
+  }).catch(() => {});
+}
+
+export async function loadFavoritesFromCloud() {
+  const h = authHeaders();
+  if (!h) return null;
+  const user = getUser();
+  if (!user) return null;
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_favorites?user_id=eq.${user.id}&select=plan&order=created_at.desc`,
+      { headers: h }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.map(row => row.plan).filter(Boolean);
+  } catch { return null; }
+}

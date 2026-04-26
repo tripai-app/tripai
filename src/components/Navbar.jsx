@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import useIsMobile from '../hooks/useIsMobile';
-import { getUser, signOut } from '../utils/auth';
+import { getUser, signOut, loadFavoritesFromCloud } from '../utils/auth';
 import AuthModal from './AuthModal';
 
 // Auto-Tags für gespeicherte Reisen generieren
@@ -265,7 +265,18 @@ export default function Navbar({ page, onNavigate, darkMode, onToggleDark, onOpe
         </div>
 
         {showFavs && <FavoritesMenu onClose={() => setShowFavs(false)} onNavigate={onNavigate} onOpenPlan={onOpenPlan} />}
-        {showAuth && <AuthModal onClose={() => setShowAuth(false)} onAuthChange={() => setUser(getUser())} />}
+        {showAuth && <AuthModal onClose={() => setShowAuth(false)} onAuthChange={async () => {
+          setUser(getUser());
+          // Nach Login: Cloud-Favoriten laden und mit lokalen mergen
+          const cloudFavs = await loadFavoritesFromCloud();
+          if (cloudFavs && cloudFavs.length > 0) {
+            const local = JSON.parse(localStorage.getItem('tripai_favorites') || '[]');
+            // Merge: Cloud-Daten bevorzugen, Duplikate entfernen
+            const merged = [...cloudFavs, ...local.filter(l => !cloudFavs.some(c => c.destination === l.destination))].slice(0, 20);
+            localStorage.setItem('tripai_favorites', JSON.stringify(merged));
+            window.dispatchEvent(new CustomEvent('favoritesCountChanged', { detail: merged.length }));
+          }
+        }} />}
       </div>
     </nav>
   );

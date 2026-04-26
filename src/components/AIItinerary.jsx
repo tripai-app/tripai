@@ -4,6 +4,7 @@ import { getAmazonLink } from '../data/affiliateConfig';
 import useIsMobile from '../hooks/useIsMobile';
 import { CountdownWidget, PhrasesWidget, EmergencyWidget, TippingWidget, BestTimeWidget, DosDontsWidget } from './TravelWidgets';
 import PlanChatbot from './PlanChatbot';
+import { getUser, syncFavoritesToCloud } from '../utils/auth';
 
 // Zählt animiert von 0 auf Zielwert hoch
 function useCountUp(target, duration = 900) {
@@ -891,7 +892,7 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
     showToast(`${'⭐'.repeat(stars)} Danke für deine Bewertung!`, 'success');
   };
 
-  const handleFavorite = () => {
+  const handleFavorite = async () => {
     try {
       const favs = JSON.parse(localStorage.getItem('tripai_favorites') || '[]');
       let updated;
@@ -904,9 +905,11 @@ export default function AIItinerary({ plan, onBack, onNewTrip, onHome, onRegener
         updated = [{ destination: plan.destination, emoji: plan.emoji, days: plan.days?.length, persons: plan.persons, budget: plan.budget, date: new Date().toLocaleDateString('de-DE'), fullPlan: plan }, ...favs].slice(0, 20);
         localStorage.setItem('tripai_favorites', JSON.stringify(updated));
         setIsFav(true);
-        showToast('❤️ Zu Favoriten hinzugefügt!', 'success');
+        showToast('❤️ Gespeichert' + (getUser() ? ' & in Cloud synchronisiert!' : '!'), 'success');
       }
       window.dispatchEvent(new CustomEvent('favoritesCountChanged', { detail: updated.length }));
+      // Cloud-Sync wenn eingeloggt
+      if (getUser()) syncFavoritesToCloud(updated).catch(() => {});
     } catch { showToast('Fehler beim Speichern', 'error'); }
   };
 
