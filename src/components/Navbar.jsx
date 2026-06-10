@@ -3,6 +3,114 @@ import useIsMobile from '../hooks/useIsMobile';
 import { getUser, signOut, loadFavoritesFromCloud } from '../utils/auth';
 import AuthModal from './AuthModal';
 
+// ── Reiseziele Vergleich ──────────────────────────────────────────────────────
+function CompareModal({ favs, onClose }) {
+  const [sel1, setSel1] = useState(0);
+  const [sel2, setSel2] = useState(Math.min(1, favs.length - 1));
+
+  const p1 = favs[sel1];
+  const p2 = favs[sel2];
+
+  const COMPARE_FIELDS = [
+    { key: 'days', label: '📅 Reisedauer', fmt: (v) => `${v} Tage` },
+    { key: 'persons', label: '👥 Personen', fmt: (v) => `${v} Pers.` },
+    { key: 'budget', label: '💰 Budget', fmt: (v) => `${(v||0).toLocaleString('de-DE')}€` },
+  ];
+
+  const getActualCost = (fav) => fav.fullPlan?.costs?.gesamt || null;
+  const getFlightPrice = (fav) => fav.fullPlan?.flights?.reduce((min, f) => Math.min(min, f.priceFrom || 999), 999) || null;
+  const getHotelPrice = (fav) => fav.fullPlan?.hotels?.reduce((min, h) => Math.min(min, h.pricePerNight || 999), 999) || null;
+  const getActivitiesCount = (fav) => fav.fullPlan?.days?.reduce((s, d) => s + (d.slots?.filter(sl => sl.type !== 'restaurant').length || 0), 0) || 0;
+  const getRestaurantCount = (fav) => fav.fullPlan?.days?.reduce((s, d) => s + (d.slots?.filter(sl => sl.type === 'restaurant').length || 0), 0) || 0;
+  const getHiddenGemsCount = (fav) => (fav.fullPlan?.hiddenGems?.length || 0) + (fav.fullPlan?.days?.filter(d => d.hiddenGem).length || 0);
+
+  const CompareRow = ({ label, val1, val2, better = 'lower', fmt = (v) => v }) => {
+    const n1 = typeof val1 === 'number' ? val1 : null;
+    const n2 = typeof val2 === 'number' ? val2 : null;
+    const win1 = n1 !== null && n2 !== null && (better === 'lower' ? n1 < n2 : n1 > n2);
+    const win2 = n1 !== null && n2 !== null && (better === 'lower' ? n2 < n1 : n2 > n1);
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 6, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+        <div style={{ textAlign: 'right', fontSize: 13, fontWeight: win1 ? 800 : 500, color: win1 ? '#16a34a' : '#374151', background: win1 ? '#f0fdf4' : 'transparent', borderRadius: 8, padding: '4px 8px' }}>
+          {val1 != null ? fmt(val1) : '—'}{win1 && ' ✓'}
+        </div>
+        <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>{label}</div>
+        <div style={{ textAlign: 'left', fontSize: 13, fontWeight: win2 ? 800 : 500, color: win2 ? '#16a34a' : '#374151', background: win2 ? '#f0fdf4' : 'transparent', borderRadius: 8, padding: '4px 8px' }}>
+          {win2 && '✓ '}{val2 != null ? fmt(val2) : '—'}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
+        {/* Header */}
+        <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>⚖️ Reiseziele vergleichen</div>
+          <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 50, width: 30, height: 30, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        </div>
+
+        <div style={{ padding: '16px 20px' }}>
+          {/* Destination Pickers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            {[{ sel: sel1, setSel: setSel1, exclude: sel2, label: 'Reise 1' }, { sel: sel2, setSel: setSel2, exclude: sel1, label: 'Reise 2' }].map(({ sel, setSel, exclude, label }) => (
+              <div key={label}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 6 }}>{label}</div>
+                <select value={sel} onChange={e => setSel(parseInt(e.target.value))}
+                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#0f172a', background: '#f8fafc', cursor: 'pointer', outline: 'none' }}>
+                  {favs.map((f, i) => (
+                    <option key={i} value={i} disabled={i === exclude}>{f.emoji || '✈️'} {f.destination}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+
+          {/* Destination Headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 4 }}>
+            {[p1, p2].map((p, i) => (
+              <div key={i} style={{ background: i === 0 ? 'linear-gradient(135deg,#eff6ff,#dbeafe)' : 'linear-gradient(135deg,#f0fdf4,#dcfce7)', borderRadius: 14, padding: '12px', textAlign: 'center' }}>
+                <div style={{ fontSize: 28 }}>{p?.emoji || '✈️'}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>{p?.destination}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>{p?.days} Tage · {p?.budget?.toLocaleString('de-DE')}€</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Comparison Table */}
+          <div style={{ marginTop: 8 }}>
+            <CompareRow label="📅 Reisedauer" val1={p1?.days} val2={p2?.days} better="higher" fmt={v => `${v} Tage`} />
+            <CompareRow label="💰 Budget" val1={p1?.budget} val2={p2?.budget} better="lower" fmt={v => `${(v||0).toLocaleString('de-DE')}€`} />
+            <CompareRow label="📊 Ges. Kosten" val1={getActualCost(p1)} val2={getActualCost(p2)} better="lower" fmt={v => `${v.toLocaleString('de-DE')}€`} />
+            <CompareRow label="✈️ Günstigster Flug" val1={getFlightPrice(p1)} val2={getFlightPrice(p2)} better="lower" fmt={v => v < 999 ? `ab ${v}€` : '—'} />
+            <CompareRow label="🏨 Günstigstes Hotel" val1={getHotelPrice(p1)} val2={getHotelPrice(p2)} better="lower" fmt={v => v < 999 ? `ab ${v}€/N.` : '—'} />
+            <CompareRow label="🎯 Aktivitäten" val1={getActivitiesCount(p1)} val2={getActivitiesCount(p2)} better="higher" fmt={v => `${v} Stk.`} />
+            <CompareRow label="🍽️ Restaurants" val1={getRestaurantCount(p1)} val2={getRestaurantCount(p2)} better="higher" fmt={v => `${v} Stk.`} />
+            <CompareRow label="💎 Geheimtipps" val1={getHiddenGemsCount(p1)} val2={getHiddenGemsCount(p2)} better="higher" fmt={v => `${v} Stk.`} />
+          </div>
+
+          {/* Tips */}
+          {(p1?.fullPlan?.savingTips || p2?.fullPlan?.savingTips) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
+              {[p1, p2].map((p, i) => p?.fullPlan?.savingTips && (
+                <div key={i} style={{ background: '#fffbeb', borderRadius: 12, padding: '10px 12px', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>💡 SPARTIPP</div>
+                  <div style={{ fontSize: 12, color: '#78350f' }}>{p.fullPlan.savingTips}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button onClick={onClose} style={{ width: '100%', marginTop: 16, background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', border: 'none', borderRadius: 12, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Auto-Tags für gespeicherte Reisen generieren
 function getAutoTags(fav) {
   const dest = (fav.destination || '').toLowerCase();
@@ -22,6 +130,7 @@ function getAutoTags(fav) {
 function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
   const [favs, setFavs] = useState([]);
   const [activeTag, setActiveTag] = useState(null);
+  const [showCompare, setShowCompare] = useState(false);
   const ref = useRef(null);
   const isMobile = useIsMobile();
 
@@ -150,10 +259,18 @@ function FavoritesMenu({ onClose, onNavigate, onOpenPlan }) {
         <button onClick={() => { onNavigate('planner'); onClose(); }} style={{ width: '100%', background: 'linear-gradient(135deg,#2563eb,#0ea5e9)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           ✈️ Neue Reise planen
         </button>
+        {favs.length >= 2 && (
+          <button onClick={() => setShowCompare(true)} style={{ width: '100%', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1.5px solid #93c5fd', borderRadius: 10, padding: '9px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#1d4ed8' }}>
+            ⚖️ Reiseziele vergleichen
+          </button>
+        )}
         <button onClick={clearPlanCache} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#94a3b8', padding: '4px 0', textAlign: 'center' }}>
           🗑️ Plancache leeren
         </button>
       </div>
+
+      {/* Compare Modal */}
+      {showCompare && <CompareModal favs={favs} onClose={() => setShowCompare(false)} />}
     </div>
   );
 

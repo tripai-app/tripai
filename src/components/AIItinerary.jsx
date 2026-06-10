@@ -238,7 +238,8 @@ function WeatherAndMap({ destination, travelDate }) {
         if (!loc) return;
         setGeo(loc);
 
-        const baseUrl = `latitude=${loc.latitude}&longitude=${loc.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+        const dailyFields = 'temperature_2m_max,temperature_2m_min,weathercode,precipitation_sum,precipitation_probability_max,uv_index_max,windspeed_10m_max';
+        const baseUrl = `latitude=${loc.latitude}&longitude=${loc.longitude}&daily=${dailyFields}&timezone=auto`;
         let wData;
 
         if (travelDate) {
@@ -252,14 +253,26 @@ function WeatherAndMap({ destination, travelDate }) {
             const idx = raw.daily.time?.indexOf(travelDate) ?? daysUntil;
             const start = Math.max(0, idx - 1);
             const slice = (arr) => arr?.slice(start, start + 5) ?? [];
-            wData = { time: slice(raw.daily.time), temperature_2m_max: slice(raw.daily.temperature_2m_max), temperature_2m_min: slice(raw.daily.temperature_2m_min), weathercode: slice(raw.daily.weathercode) };
+            wData = {
+              time: slice(raw.daily.time),
+              temperature_2m_max: slice(raw.daily.temperature_2m_max),
+              temperature_2m_min: slice(raw.daily.temperature_2m_min),
+              weathercode: slice(raw.daily.weathercode),
+              precipitation_sum: slice(raw.daily.precipitation_sum),
+              precipitation_probability_max: slice(raw.daily.precipitation_probability_max),
+              uv_index_max: slice(raw.daily.uv_index_max),
+              windspeed_10m_max: slice(raw.daily.windspeed_10m_max),
+            };
             setWeatherLabel('Vorhersage für deine Reise');
           } else if (daysUntil > 14) {
             const lastYear = new Date(travel);
             lastYear.setFullYear(lastYear.getFullYear() - 1);
             const fmt = (d) => d.toISOString().split('T')[0];
+            // Archive API supports fewer fields — add what's available
+            const archiveFields = 'temperature_2m_max,temperature_2m_min,weathercode,precipitation_sum,windspeed_10m_max';
+            const archiveUrl = `latitude=${loc.latitude}&longitude=${loc.longitude}&daily=${archiveFields}&timezone=auto`;
             const wRes = await fetch(
-              `https://archive-api.open-meteo.com/v1/archive?${baseUrl}&start_date=${fmt(lastYear)}&end_date=${fmt(new Date(lastYear.getTime() + 4 * 86400000))}`,
+              `https://archive-api.open-meteo.com/v1/archive?${archiveUrl}&start_date=${fmt(lastYear)}&end_date=${fmt(new Date(lastYear.getTime() + 4 * 86400000))}`,
               { signal }
             );
             wData = (await wRes.json()).daily;
@@ -268,7 +281,7 @@ function WeatherAndMap({ destination, travelDate }) {
         }
 
         if (!wData) {
-          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=5`, { signal });
+          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?${baseUrl}&forecast_days=7`, { signal });
           wData = (await wRes.json()).daily;
           setWeatherLabel('Wetter diese Woche');
         }
@@ -284,29 +297,68 @@ function WeatherAndMap({ destination, travelDate }) {
 
   if (!geo) return null;
 
-  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const uvColor = (uv) => uv >= 8 ? '#dc2626' : uv >= 6 ? '#ea580c' : uv >= 3 ? '#f59e0b' : '#22c55e';
+  const uvLabel = (uv) => uv >= 8 ? 'Sehr hoch' : uv >= 6 ? 'Hoch' : uv >= 3 ? 'Mittel' : 'Niedrig';
 
   return (
     <div style={{ marginTop: 14 }}>
-      {/* Wetter */}
+      {/* Wetter — verbessertes Detail-Widget */}
       {weather && (
         <div style={{ background: '#fff', borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>🌤️ Wetter in {destination}</div>
-            {weatherLabel && <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{weatherLabel}</div>}
+            {weatherLabel && <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, background: '#f8fafc', borderRadius: 6, padding: '2px 7px' }}>{weatherLabel}</div>}
           </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
-            {weather.time?.slice(0, 5).map((date, i) => {
-              const d = new Date(date);
+          {/* Tages-Übersicht */}
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between', marginBottom: 14 }}>
+            {weather.time?.slice(0, 7).map((date, i) => {
+              const d = new Date(date + 'T12:00:00');
+              const isToday = date === new Date().toISOString().split('T')[0];
+              const travelMatch = travelDate && date === travelDate;
               return (
-                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>{days[d.getDay()]}</div>
-                  <div style={{ fontSize: 20 }}>{WEATHER_ICONS[weather.weathercode?.[i]] || '🌤️'}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{Math.round(weather.temperature_2m_max?.[i])}°</div>
+                <div key={i} style={{
+                  flex: 1, textAlign: 'center', padding: '8px 4px', borderRadius: 12,
+                  background: travelMatch ? 'linear-gradient(135deg,#eff6ff,#dbeafe)' : isToday ? '#f0fdf4' : '#f8fafc',
+                  border: travelMatch ? '1.5px solid #93c5fd' : isToday ? '1.5px solid #86efac' : '1px solid #f1f5f9',
+                }}>
+                  <div style={{ fontSize: 9, color: travelMatch ? '#1d4ed8' : '#94a3b8', fontWeight: 700, marginBottom: 2 }}>
+                    {travelMatch ? '✈️' : WEEKDAYS[d.getDay()]}
+                  </div>
+                  <div style={{ fontSize: 18 }}>{WEATHER_ICONS[weather.weathercode?.[i]] || '🌤️'}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>{Math.round(weather.temperature_2m_max?.[i])}°</div>
                   <div style={{ fontSize: 10, color: '#94a3b8' }}>{Math.round(weather.temperature_2m_min?.[i])}°</div>
+                  {weather.precipitation_probability_max?.[i] > 20 && (
+                    <div style={{ fontSize: 9, color: '#3b82f6', fontWeight: 600, marginTop: 2 }}>
+                      💧{weather.precipitation_probability_max[i]}%
+                    </div>
+                  )}
                 </div>
               );
             })}
+          </div>
+          {/* Detail-Zeile */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {weather.windspeed_10m_max?.[0] != null && (
+              <div style={{ background: '#f0f9ff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 600, color: '#0369a1' }}>
+                💨 {Math.round(weather.windspeed_10m_max[0])} km/h
+              </div>
+            )}
+            {weather.precipitation_sum?.[0] != null && weather.precipitation_sum[0] > 0 && (
+              <div style={{ background: '#eff6ff', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 600, color: '#1d4ed8' }}>
+                🌧️ {weather.precipitation_sum[0].toFixed(1)} mm
+              </div>
+            )}
+            {weather.uv_index_max?.[0] != null && (
+              <div style={{ background: '#fefce8', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 600, color: uvColor(weather.uv_index_max[0]) }}>
+                ☀️ UV {Math.round(weather.uv_index_max[0])} · {uvLabel(weather.uv_index_max[0])}
+              </div>
+            )}
+            {weather.temperature_2m_max?.[0] != null && (
+              <div style={{ background: '#fff7ed', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 600, color: '#c2410c' }}>
+                🌡️ {Math.round(weather.temperature_2m_min?.[0])}–{Math.round(weather.temperature_2m_max[0])}°C
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -689,6 +741,23 @@ function DayCard({ day, destination, dayIdx, checkedSlots, onToggleSlot }) {
           />
         ))}
       </div>
+      {/* Foto-Spots */}
+      {day.photoSpots?.length > 0 && (
+        <div style={{ margin: '0 20px 14px', background: 'linear-gradient(135deg,#fff7ed,#ffedd5)', borderRadius: 14, padding: '12px 16px', border: '1px solid #fed7aa' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#c2410c', marginBottom: 8, letterSpacing: '0.5px' }}>📸 FOTO-SPOTS</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {day.photoSpots.map((ps, i) => (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 10, padding: '8px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#7c2d12' }}>📍 {ps.spot}</div>
+                  <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 700, whiteSpace: 'nowrap', background: '#fff', borderRadius: 6, padding: '2px 6px' }}>⏰ {ps.bestTime}</div>
+                </div>
+                {ps.tip && <div style={{ fontSize: 12, color: '#9a3412', marginTop: 3 }}>💡 {ps.tip}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {day.hiddenGem && (
         <div style={{ margin: '0 20px 20px', background: 'linear-gradient(135deg,#fdf4ff,#fae8ff)', borderRadius: 14, padding: '12px 16px', display: 'flex', gap: 10 }}>
           <span style={{ fontSize: 18 }}>💎</span>

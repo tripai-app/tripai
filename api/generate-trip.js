@@ -1,6 +1,94 @@
 // Vercel Edge Function — Claude AI Trip Generator mit Streaming
 export const config = { runtime: 'edge' };
 
+// ── Statischer System-Prompt (identisch über alle Requests → Prompt-Caching spart ~80% Input-Kosten) ──
+const SYSTEM_PROMPT = `Du bist ein professioneller Weltreise-Experte und erfahrener Reiseplaner. Antworte AUSSCHLIESSLICH mit validem JSON — kein erklärender Text, kein Markdown, keine Codeblöcke, keine Kommentare vor oder nach dem JSON.
+
+═══════════════════════════════════════════════════════════════════
+SCHEMA — VOLLSTÄNDIGER REISEPLAN
+═══════════════════════════════════════════════════════════════════
+
+{"destination":"Zielort","emoji":"🏝️","hotels":[{"name":"Hotel A","stars":4,"pricePerNight":95,"location":"Stadtzentrum","highlight":"Perfekte Lage & Service"},{"name":"Hotel B","stars":3,"pricePerNight":58,"location":"Altstadt","highlight":"Günstig & zentral gelegen"}],"flights":[{"airline":"Lufthansa","type":"Direktflug","duration":"3h 25min","priceFrom":195,"tip":"Frühbucher spart 30%"},{"airline":"Ryanair","type":"1 Stopp via Wien","duration":"5h 10min","priceFrom":89,"tip":"Günstigste Option"}],"days":[{"dayNumber":1,"title":"Ankunft & Erster Eindruck","theme":"✈️","slots":[{"time":"15:00","type":"sehenswuerdigkeit","name":"Altstadtspaziergang","description":"Erste Orientierung gewinnen","area":"Altstadt","cost":0,"tips":"Offline-Karte herunterladen"},{"time":"19:00","type":"restaurant","name":"Lokale Trattoria","description":"Typische Hausküche genießen","area":"Zentrum","cost":28,"cuisine":"Regional","mustTry":"Signature-Pasta"}],"photoSpots":[{"spot":"Stadtplatz Nordseite","bestTime":"18:30 goldene Stunde","tip":"Weitwinkel für Architektur + Lichtreflexe"}],"hiddenGem":"Versteckter Innenhof hinter Kathedrale","dailyCostEstimate":80},{"dayNumber":2,"title":"Kultur & Altstadt","theme":"🏛️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Nationalmuseum","description":"Landesgeschichte & Kunst","area":"Museumsviertel","cost":15,"tips":"Audio-Guide lohnt sich"},{"time":"12:30","type":"restaurant","name":"Marktcafé","description":"Frische lokale Marktkost","area":"Zentralmarkt","cost":16,"cuisine":"Regional","mustTry":"Tagessuppe"},{"time":"14:30","type":"aktivitaet","name":"Historische Stadtführung","description":"Lokaler Guide & Geschichten","area":"Altstadt","cost":18,"tips":"Kleine Gruppen buchen"},{"time":"20:00","type":"restaurant","name":"Rooftop Abendessen","description":"Panoramablick & Küche","area":"Neustadt","cost":40,"cuisine":"Mediterran","mustTry":"Spezialität des Hauses"}],"photoSpots":[{"spot":"Burgberg Aussichtspunkt","bestTime":"07:00 Sonnenaufgang","tip":"Stativ + Weitwinkel, wenige Touristen"},{"spot":"Alte Brücke Westufer","bestTime":"20:30 blaue Stunde","tip":"Langzeitbelichtung 15–20s empfohlen"}],"hiddenGem":"Geheimer Dachgarten Bar","dailyCostEstimate":120}],"costs":{"transport":250,"hotel":480,"essen":360,"aktivitaeten":200,"gesamt":1290},"tips":["Frühbuchen spart viel Geld","Bargeld für Märkte mitführen","Öffentliche Verkehrsmittel nutzen"],"tiktokSpots":[{"name":"Aussichtsturm Stadtmitte","reason":"Spektakulärer 360°-Panoramablick","bestTime":"Goldstunde 07:00 Uhr"},{"name":"Bunter Wochenmarkt","reason":"Farbenfroh & voller Atmosphäre","bestTime":"Samstagmorgen 09:00 Uhr"}],"hiddenGems":[{"name":"Verborgene Gasse hinter Markt","description":"Nur Einheimische kennen sie","howToGet":"Hinter der alten Kirche rechts"},{"name":"Geheimbar ohne Schild","description":"Prohibition-Stil Cocktails","howToGet":"Klingeln beim schwarzen Schild"}],"budgetWithin":true,"savingTips":"Mittagsmenüs sind 40% günstiger als Abendessen"}
+
+═══════════════════════════════════════════════════════════════════
+SCHEMA — SPLIT-MODUS (nur Tage-Array, KEIN Wrapper-Objekt)
+═══════════════════════════════════════════════════════════════════
+
+[{"dayNumber":8,"title":"Strandtag","theme":"🌊","slots":[{"time":"09:00","type":"strand","name":"Hauptstrand","description":"Morgen schwimmen & relaxen","area":"Küste","cost":0,"tips":"Früh kommen für guten Platz"},{"time":"13:00","type":"restaurant","name":"Strandbar","description":"Frische Meeresfrüchte","area":"Strandpromenade","cost":22,"cuisine":"Seafood","mustTry":"Gegrillter Fisch"}],"photoSpots":[{"spot":"Felsenspitze Nordende","bestTime":"19:30 Sonnenuntergang","tip":"Silhouette gegen Orangehimmel"}],"hiddenGem":"Versteckter Felsenpool Südküste","dailyCostEstimate":90}]
+
+═══════════════════════════════════════════════════════════════════
+SLOT-TYPEN (erlaubte Werte für slot.type)
+═══════════════════════════════════════════════════════════════════
+
+• sehenswuerdigkeit — Museen, Denkmäler, Tempel, Burgen, Aussichtspunkte, historische Stätten, Galerien, Kirchen
+• restaurant — Frühstück, Mittagessen, Abendessen, Cafés, Bars, Weinstuben, Streetfood, Märkte
+• aktivitaet — Stadtführungen, Kochkurse, Bootstouren, Fahrradtouren, Klettern, Tauchen, Kurse, Workshops, Sport
+• strand — Strandaufenthalte, Schnorcheln, Surfen, Kitesurfen, Strandbars, Bootsausflüge, Wasseraktivitäten
+• shopping — Basare, Flohmärkte, Designerviertel, Souvenirläden, Winzer, Lebensmittelmärkte, Handwerksmärkte
+• natur — Nationalparks, Wanderungen, Wasserfälle, Vulkane, Höhlen, Tierbeobachtung, Botanische Gärten, Landschaft
+• wellness — Spa-Behandlungen, Massagen, Hammam, Yoga, Meditation, Thermalbäder, Retreats
+
+═══════════════════════════════════════════════════════════════════
+HOTEL-KATEGORIEN UND PREISBEREICHE
+═══════════════════════════════════════════════════════════════════
+
+• budget (Hostel / 2-Sterne): unter 50€/Nacht — Gemeinschaftsbäder, einfache Zimmer, Schlafsäle
+• mittel (3-Sterne): 50–100€/Nacht — Komfortables Einzelzimmer, guter Standort, Basis-Ausstattung
+• komfort (4-Sterne): 100–180€/Nacht — Gehobener Standard, Frühstück inklusive, Spa oder Pool
+• luxus (5-Sterne): über 200€/Nacht — Premium-Service, Butler, exklusive Lage, Concierge
+
+═══════════════════════════════════════════════════════════════════
+FLUGPREISE — REALISMUS-GUIDE (von Deutschland)
+═══════════════════════════════════════════════════════════════════
+
+• Kurzstrecke Europa 1–3h (Prag, Wien, Amsterdam, Paris, Rom, Madrid): 40–150€ Economy
+• Mittelstrecke 3–5h (Mallorca, Lissabon, Istanbul, Athen, Kairo, Marokko): 80–300€ Economy
+• Langstrecke 6–10h (Dubai, Bangkok, New York, Singapur, Kapstadt, Reykjavik): 350–900€ Economy
+• Ultralangstrecke 10h+ (Tokio, Sydney, Buenos Aires, Los Angeles, Honolulu): 600–1400€ Economy
+
+WICHTIG: Niemals Fernstreckenflüge unter 200€ — keine unrealistischen Fantasiepreise!
+
+═══════════════════════════════════════════════════════════════════
+FOTO-SPOTS — QUALITÄTSKRITERIEN
+═══════════════════════════════════════════════════════════════════
+
+Gute photoSpots haben immer:
+• Spezifischen Ort (nicht "Stadtplatz" sondern "Rialto-Brücke Nordseite" oder "Burgberg Ostterrasse")
+• Konkrete Uhrzeit mit Begründung (goldene Stunde, Sonnenaufgang, blaue Stunde, Mittag, Nacht)
+• Praktischen Foto-Tipp (Weitwinkel, Stativ empfohlen, Reflexion im Wasser, Perspektive, Belichtung)
+• Bei Sommer-Trips: frühe Morgenstunden bevorzugen (keine Touristen-Massen)
+
+═══════════════════════════════════════════════════════════════════
+QUALITÄTSSTANDARDS
+═══════════════════════════════════════════════════════════════════
+
+• Echte Namen: Nur real existierende Orte, Hotels, Restaurants, Stadtteile
+• Lokale Küche: Restaurantempfehlungen sollen authentische Gastronomie widerspiegeln
+• Logistik: Aktivitäten geografisch sinnvoll anordnen — keine unnötigen langen Fahrwege
+• Balance: Gute Mischung aus Kultur, Essen, Natur und Freizeit pro Tag
+• Tagesrhythmus: Morgens energieintensiv, Mittag relaxter, Abend gesellig
+• Saisonalität: Öffnungszeiten, Wetter und Touristenströme der Reisezeit berücksichtigen
+
+═══════════════════════════════════════════════════════════════════
+PFLICHT-REGELN
+═══════════════════════════════════════════════════════════════════
+
+1. Nur valides JSON ausgeben — absolut kein Text davor oder danach, kein Markdown
+2. Textfelder: maximal 6 Wörter — kurz, prägnant, konkret und informativ
+3. Tagesanzahl: EXAKT die angeforderte Anzahl — weder mehr noch weniger
+4. Hotels: mindestens 2 Optionen in verschiedenen Preisklassen und Lagen
+5. Flüge: mindestens 2 Optionen — Direktflug PLUS günstigere Stopp-Alternative
+6. Ortsnamen: ausschließlich echte, existierende Orte und Stadtteile verwenden
+7. city-Feld in days: NUR bei Rundreisen befüllen — bei Einzelzielen immer weglassen
+8. photoSpots: 1–2 pro Tag mit konkreter Uhrzeit und spezifischem Foto-Tipp
+9. Tag 1 = Anreisetag (leichteres Programm), letzter Tag = Abreisetag (sanfter Abschluss)
+10. tiktokSpots auf Plan-Ebene: 2–3 viral-taugliche Spots für den Gesamtplan
+11. hiddenGems auf Plan-Ebene: 2–3 verborgene touristisch unbekannte Orte
+12. hiddenGem auf Tag-Ebene: optional, ein Geheimtipp pro Tag (kurzer String)
+13. Budgettreue: Gesamtkosten möglichst ≤ vorgegebenem Budget halten
+14. Preisrealismus: Flugpreise nach Region kalkulieren (siehe Guide oben)
+15. Split-Modus: Ausgabe NUR als JSON-Array der Tage — kein vollständiges Plan-Objekt`;
+
 export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -57,9 +145,6 @@ export default async function handler(req) {
     nachtleben: 'Nachtleben & Bars',
   };
   const interestsList = (interests || []).map(i => interestMap[i] || i).join(', ');
-  const tiktokSection = includeTiktok ? `,"tiktokSpots":[{"name":"Spot","reason":"Grund","bestTime":"Uhrzeit"}]` : '';
-  const hiddenSection = includeHiddenGems ? `,"hiddenGems":[{"name":"Gem","description":"Besonders","howToGet":"Anfahrt"}]` : '';
-
   // ── Reise-Typ / Gruppen / Essen Kontext ──
   const reiseTypMap = { staedtetrip:'Städtetrip (Fokus: Kultur, Sehenswürdigkeiten, Stadtleben)', strand:'Strandurlaub (Fokus: Meer, Relaxen, Wasseraktivitäten)', abenteuer:'Abenteuerreise (Fokus: Outdoor, Sport, Natur)', backpacker:'Backpacker-Reise (günstig, authentisch, off the beaten path)', wellness:'Wellness & Spa (Fokus: Entspannung, Massage, Retreats, ruhige Aktivitäten)', kulinarisch:'Kulinarische Reise (Fokus: Food-Touren, Kochkurse, Weinproben, Märkte)', fotografie:'Fotografie-Reise (Fokus: fotogene Orte, goldene Stunde, Aussichtspunkte)', festival:'Festival & Events (Fokus: lokale Feste, Konzerte, Veranstaltungen, Kultur-Events)' };
   const gruppenMap = { solo:'Einzelreise (Solo-Traveler, max. Flexibilität, kleinere Unterkünfte)', paerchen:'Pärchen-Reise (romantische Atmosphäre, intime Restaurants, Candle-Light)', freunde:'Freundesgruppe (gesellige Aktivitäten, Bars, gemeinsame Erlebnisse)', familie:'Familienreise (alle Altersgruppen, familienfreundliche Aktivitäten)', gruppe:'Große Gruppe 5+ Personen (gruppenfreundliche Locations, Gruppenrabatte)', studenten:'Studenten-Reise (Party, günstig, Hostels, Bars, Abenteuer, Budget)' };
@@ -130,41 +215,44 @@ export default async function handler(req) {
   if (splitMode) {
     const splitDays = days - splitStartDay + 1;
     maxTokens = Math.min(600 + splitDays * 380, 3500);
-    prompt = `Reise-Experte. NUR valides JSON, kein Text.
+    prompt = `SPLIT-MODUS: Nur Tage-Array ausgeben (kein Wrapper-Objekt).
 
-Fortsetzung: ${destinationStr}, ${effectiveDays} Tage gesamt, ${persons} Personen, ${budget}€, Interessen: ${interestsList || 'Allgemein'}${travelDate ? `, Reisedatum: ${travelDate}` : ''}${childrenPromptPart}
+Reise: ${destinationStr} | ${effectiveDays} Tage gesamt | ${persons} Personen | ${budget}€${travelDate ? ` | Datum: ${travelDate}` : ''}
+Interessen: ${interestsList || 'Allgemein'}${childrenPromptPart}${routePromptPart}
 
-WICHTIG: Dies sind die Folgetage einer längeren Reise. Tage ${splitStartDay}–${effectiveDays - 1} sind NORMALE Reisetage (keine Abreise-Thematik!). Nur Tag ${effectiveDays} ist der echte Abreise-/Rückreisetag. Tage ${splitStartDay}–${effectiveDays - 1} sollen volle Aktivitätsprogramme haben wie alle anderen Tage. Keine "Letzter Tag" oder "Abreise" Phrasen außer in Tag ${effectiveDays}.
+Folgetage einer längeren Reise. Tage ${splitStartDay}–${effectiveDays - 1} = NORMALE Reisetage mit vollem Programm. Nur Tag ${effectiveDays} = Abreise.
 
-Generiere NUR die Tage ${splitStartDay} bis ${effectiveDays} als JSON-Array:
-[{"dayNumber":${splitStartDay}${roundtripDaySchema},"title":"Titel","theme":"🗺️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}]
-
-Alle ${splitDays} Tage (${splitStartDay}–${effectiveDays}) ausgeben. Echte Ortsnamen.`;
+→ NUR Tage ${splitStartDay}–${effectiveDays} als JSON-Array, exakt ${splitDays} Tage.`;
   } else {
     maxTokens = 4096;
-    prompt = `Weltreise-Experte. NUR valides JSON, kein Text drumherum.
+    prompt = `Erstelle vollständigen Reiseplan:
 
-Reise: ${destinationStr}, ${effectiveDays} Tage, ${persons} Personen, ${budget}€, ${hotelLabel}, Interessen: ${interestsList || 'Allgemein'}${departureCity ? `\nAbflugstadt: ${departureCity} (realistische Flugpreise und -dauer von dort berechnen)` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison, Wetter, Öffnungszeiten und saisonale Aktivitäten berücksichtigen)` : ''}${wishes ? `\nBesondere Wünsche: ${wishes}` : ''}${reiseTypPart}${gruppenPart}${essenPart}${aktivitaetsPart}${childrenPromptPart}${routePromptPart}
-${flightPriceHint}
+Ziel: ${destinationStr} | ${effectiveDays} Tage | ${persons} Personen | Budget: ${budget}€ | ${hotelLabel}${departureCity ? `\nAbflugstadt: ${departureCity}` : ''}${travelDate ? `\nReisedatum: ${travelDate} (Saison & Wetter beachten)` : ''}${interestsList ? `\nInteressen: ${interestsList}` : ''}${wishes ? `\nWünsche: ${wishes}` : ''}${reiseTypPart}${gruppenPart}${essenPart}${aktivitaetsPart}${childrenPromptPart}${routePromptPart}
+${flightPriceHint}${totalDays && totalDays > effectiveDays ? `\nHINWEIS: Teil 1 einer ${totalDays}-Tage-Reise — Tag ${effectiveDays} ist KEIN Abreisetag, normales Programm!` : ''}
 
-JSON-Schema (ALLE ${effectiveDays} Tage, max 6 Wörter pro Textfeld, kurz halten):
-{"destination":"${destinationStr}","emoji":"🏝️","hotels":[{"name":"Hotel1","stars":4,"pricePerNight":90,"location":"Zentrum","highlight":"Top-Lage"},{"name":"Hotel2","stars":3,"pricePerNight":60,"location":"Altstadt","highlight":"Günstig & zentral"}],"flights":[{"airline":"Airline1","type":"Direktflug","duration":"3h","priceFrom":150,"tip":"Frühbucher"},{"airline":"Airline2","type":"1 Stopp","duration":"5h","priceFrom":99,"tip":"Günstigste Option"}],"days":[{"dayNumber":1${roundtripDaySchema},"title":"Titel","theme":"✈️","slots":[{"time":"09:00","type":"sehenswuerdigkeit","name":"Name","description":"Kurz","area":"Viertel","cost":10,"tips":"Tipp"},{"time":"13:00","type":"restaurant","name":"Name","description":"Lokal","area":"Bezirk","cost":20,"cuisine":"Küche","mustTry":"Gericht"},{"time":"19:00","type":"restaurant","name":"Name","description":"Abend","area":"Stadtteil","cost":25,"cuisine":"Lokal","mustTry":"Gericht"}]${includeHiddenGems ? ',"hiddenGem":"Geheimtipp"' : ''},"dailyCostEstimate":100}],"costs":{"transport":150,"hotel":400,"essen":300,"aktivitaeten":150,"gesamt":${budget}},"tips":["Tipp1","Tipp2","Tipp3"]${tiktokSection}${hiddenSection},"budgetWithin":true,"savingTips":"Tipp"}
-
-WICHTIG: Immer genau ${effectiveDays} Tage ausgeben — nicht weniger! Mindestens 2 verschiedene Hotels. Mindestens 2 verschiedene Flugoptionen. Echte Ortsnamen.${totalDays && totalDays > effectiveDays ? ` Dies ist NUR der erste Teil einer ${totalDays}-Tage-Reise — Tag ${effectiveDays} ist KEIN Abreisetag, sondern ein normaler Reisetag mit vollem Programm!` : ''}`;
+→ Exakt ${effectiveDays} Tage | Min. 2 Hotels | Min. 2 Flüge | photoSpots pro Tag`;
   }
 
-  // Anthropic mit stream:true aufrufen
+  // Anthropic mit stream:true aufrufen (Prompt Caching via anthropic-beta Header)
   const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31',
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: maxTokens,
       stream: true,
+      system: [
+        {
+          type: 'text',
+          text: SYSTEM_PROMPT,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       messages: [{ role: 'user', content: prompt }],
     }),
   });
