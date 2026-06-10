@@ -192,7 +192,6 @@ export default async function handler(req) {
   let effectiveDays = days;
   let destinationStr = destination;
   let routePromptPart = '';
-  let roundtripDaySchema = '';
 
   if (isRoundtrip && roundtripCities.length > 0) {
     let dayCounter = 1;
@@ -205,7 +204,6 @@ export default async function handler(req) {
     effectiveDays = roundtripCities.reduce((s, c) => s + c.nights, 0);
     destinationStr = `Rundreise: ${citySegments.join(' → ')}`;
     routePromptPart = `\nRundreise: Füge "city":"Stadtname" zu JEDEM day-Objekt hinzu. Tag 1 = Anreise erste Stadt, letzter Tag = Abreise letzte Stadt.`;
-    roundtripDaySchema = `,"city":"Stadtname"`;
   }
 
   // ── Split-Modus: nur zusätzliche Tage generieren (für Trips > 7 Tage) ──
